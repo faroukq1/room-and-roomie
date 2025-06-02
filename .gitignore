@@ -1,0 +1,29 @@
+# Ignore memo folder
+memo/
+
+# Ignore system/editor files
+.idea/
+*.log
+.DS_Store
+Thumbs.db
+
+# Node.js (Express backend)
+server/node_modules/
+server/dist/
+server/.cache/
+server/.next/
+
+# Flutter (public folder)
+public/.dart_tool/
+public/.idea/
+public/.packages
+public/.flutter-plugins
+public/.flutter-plugins-dependencies
+public/.metadata
+public/build/
+public/*.iml
+public/pubspec.lock
+
+# Misc
+*.swp
+*.tmp
