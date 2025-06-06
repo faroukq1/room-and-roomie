@@ -1,12 +1,9 @@
 ### **For Tenants / Roommates**
 
-* Sign up and authentication: Account creation with identity verification (phone number or email), secure login, and password recovery
-* Search for a rental or roommate using filters (city, price, type of housing, proximity to services, etc.)
-* View detailed listings (photos, description, map location, availability, conditions)
-* Apply to rental or roommate ads
+* Search for a rental or roommate using filters (city, price, type of housing, proximity to services, etc.) 
+* Apply to rental or roommate ads 
 * Post a roommate search ad (for users looking for a roommate)
 * Send and receive messages via integrated messaging system
-* Add listings to favorites
 * Make secure payments (deposit, first rent, etc.)
 * Rate rentals and landlords after an experience
 
