@@ -109,6 +109,9 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get filtered logements
+router.get('/filter', async (req, res) => {
+
 // Get logement by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -147,6 +150,107 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Logement deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+
+    // Build dynamic WHERE clause based on filter parameters
+    let whereClause = 'WHERE l.est_actif = true';
+    const params = [];
+    let paramIndex = 1;
+
+    // Add filters
+    if (req.query.ville) {
+      whereClause += ` AND l.ville ILIKE $${paramIndex}`;
+      params.push(`%${req.query.ville}%`);
+      paramIndex++;
+    }
+
+    if (req.query.type_logement) {
+      whereClause += ` AND l.type_logement = $${paramIndex}`;
+      params.push(req.query.type_logement);
+      paramIndex++;
+    }
+
+    if (req.query.loyer_min) {
+      whereClause += ` AND l.loyer >= $${paramIndex}`;
+      params.push(parseFloat(req.query.loyer_min));
+      paramIndex++;
+    }
+
+    if (req.query.loyer_max) {
+      whereClause += ` AND l.loyer <= $${paramIndex}`;
+      params.push(parseFloat(req.query.loyer_max));
+      paramIndex++;
+    }
+
+    if (req.query.superficie_min) {
+      whereClause += ` AND l.superficie >= $${paramIndex}`;
+      params.push(parseFloat(req.query.superficie_min));
+      paramIndex++;
+    }
+
+    if (req.query.superficie_max) {
+      whereClause += ` AND l.superficie <= $${paramIndex}`;
+      params.push(parseFloat(req.query.superficie_max));
+      paramIndex++;
+    }
+
+    if (req.query.nombre_pieces) {
+      whereClause += ` AND l.nombre_pieces = $${paramIndex}`;
+      params.push(parseInt(req.query.nombre_pieces));
+      paramIndex++;
+    }
+
+    if (req.query.meuble) {
+      whereClause += ` AND l.meuble = $${paramIndex}`;
+      params.push(req.query.meuble === 'true');
+      paramIndex++;
+    }
+
+    // Get total count of filtered logements
+    const countQuery = `SELECT COUNT(*) FROM logements l ${whereClause}`;
+    const totalCount = await pool.query(countQuery, params);
+    const total = parseInt(totalCount.rows[0].count);
+
+    // Get filtered logements
+    const query = `
+      SELECT 
+        l.*,
+        json_build_object(
+          'id', u.id,
+          'nom', u.nom,
+          'prenom', u.prenom,
+          'email', u.email,
+          'telephone', u.telephone
+        ) as proprietaire
+      FROM logements l
+      JOIN users u ON l.proprietaire_id = u.id
+      ${whereClause}
+      ORDER BY l.date_creation DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+    
+    res.json({
+      logements: result.rows,
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: offset + limit < total,
+        hasPreviousPage: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error filtering logements:', error);
+    res.status(500).json({ message: 'Error filtering logements', error: error.message });
   }
 });
 
