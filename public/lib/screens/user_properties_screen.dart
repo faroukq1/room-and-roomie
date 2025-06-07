@@ -253,13 +253,16 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     }
   }
 
-  void _editProperty(int propertyId) {
-    Navigator.push(
+  void _editProperty(int propertyId) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditPropertyScreen(propertyId: propertyId),
       ),
     );
+    if (result == true) {
+      _fetchUserProperties();
+    }
   }
 
   void _addNewProperty() {

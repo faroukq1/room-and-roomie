@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'ROOM & ROOMIE',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
