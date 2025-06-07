@@ -194,6 +194,7 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
   }
 
   Future<void> _deleteProperty(int propertyId) async {
+    print('Deleting property with ID: $propertyId');
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -226,12 +227,16 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
         headers: {'Content-Type': 'application/json'},
       );
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
+      if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Propriété supprimée avec succès')),
         );
-        // Refresh the list after deletion
+        // Refresh your property list after deletion
         _fetchUserProperties();
+      } else if (response.statusCode == 404) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Propriété non trouvée')));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

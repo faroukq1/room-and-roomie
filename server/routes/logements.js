@@ -149,6 +149,29 @@ router.get('/', async (req, res) => {
   }
 });
 
+// delete logement
+router.delete('/:id', async (req, res) => {
+  const logementId = parseInt(req.params.id, 10);
+
+  if (isNaN(logementId)) {
+    return res.status(400).json({ error: 'ID logement invalide' });
+  }
+
+  try {
+    // Delete logement by id
+    const result = await pool.query('DELETE FROM logements WHERE id = $1 RETURNING *', [logementId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Logement non trouvé' });
+    }
+
+    res.json({ message: 'Logement supprimé avec succès', logement: result.rows[0] });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du logement:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // Get filtered logements
 router.get('/filter', async (req, res) => {
   try {
