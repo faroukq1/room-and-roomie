@@ -13,7 +13,8 @@ class AddNewPropertyScreen extends StatefulWidget {
 class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
   final _formKey = GlobalKey<FormState>();
   final _storage = const FlutterSecureStorage();
-  final String baseUrl = 'http://10.0.2.2:3000';
+  final String baseUrl =
+      'http://10.0.2.2:3000'; // Replace with your server's IP (e.g., 192.168.1.100 or 10.0.2.2 for emulator)
 
   // Controllers
   final TextEditingController _titleController = TextEditingController();
@@ -34,60 +35,104 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
   bool _isSubmitting = false;
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSubmitting = true);
-
-    final token = await _storage.read(key: 'auth_token');
-    final userData = await _storage.read(key: 'user_data');
-
-    if (token == null || userData == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Veuillez vous connecter')));
+    if (!_formKey.currentState!.validate()) {
+      print('Form validation failed');
+      setState(() => _isSubmitting = false);
       return;
     }
 
-    final user = jsonDecode(userData);
-    final userId = user['id'];
+    setState(() => _isSubmitting = true);
 
-    final Map<String, dynamic> newProperty = {
-      "titre": _titleController.text,
-      "description": _descriptionController.text,
-      "adresse": _adresseController.text,
-      "ville": _villeController.text,
-      "code_postal": _codePostalController.text,
-      "superficie": double.tryParse(_superficieController.text),
-      "nombre_pieces": int.tryParse(_nombrePiecesController.text),
-      "nombre_coloc_max": int.tryParse(_nombreColocController.text),
-      "type_logement": _typeLogement,
-      "loyer": double.tryParse(_loyerController.text),
-      "charges_incluses": _chargesIncluses,
-      "meuble": _meuble,
-      "disponible_a_partir": _dateDispoController.text,
-      "proprietaire_id": userId,
-    };
+    try {
+      // Load user data similar to _loadUserData
+      String? userDataJson = await _storage.read(key: 'user_data');
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/logements'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(newProperty),
-    );
+      StringBuffer buffer = StringBuffer();
+      if (userDataJson != null) {
+        buffer.writeln('user_data: $userDataJson');
+      }
+      print(buffer.toString());
 
-    setState(() => _isSubmitting = false);
+      int userId = 0;
+      Map<String, dynamic>? userData;
+      if (userDataJson != null) {
+        try {
+          userData = jsonDecode(userDataJson);
+          userId = userData?['id'] ?? 0;
+        } catch (e) {
+          print('Error parsing user_data: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Erreur lors de la lecture des données utilisateur',
+              ),
+            ),
+          );
+          setState(() => _isSubmitting = false);
+          return;
+        }
+      }
 
-    if (response.statusCode == 201) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Propriété ajoutée avec succès')),
+      if (userId == 0) {
+        print('Invalid userId: $userId');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ID utilisateur manquant')),
+        );
+        setState(() => _isSubmitting = false);
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final Map<String, dynamic> newProperty = {
+        "proprietaire_id": userId,
+        "titre": _titleController.text,
+        "description": _descriptionController.text,
+        "adresse": _adresseController.text,
+        "ville": _villeController.text,
+        "code_postal": _codePostalController.text,
+        "superficie": double.tryParse(_superficieController.text) ?? 0.0,
+        "nombre_pieces": int.tryParse(_nombrePiecesController.text) ?? 0,
+        "nombre_coloc_max": int.tryParse(_nombreColocController.text) ?? 0,
+        "type_logement": _typeLogement,
+        "loyer": double.tryParse(_loyerController.text) ?? 0.0,
+        "charges_incluses": _chargesIncluses,
+        "meuble": _meuble,
+        "disponible_a_partir": _dateDispoController.text,
+      };
+
+      final url = '$baseUrl/api/logements/create';
+      print('Request URL: $url');
+      print('Request Payload: ${jsonEncode(newProperty)}');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(newProperty),
       );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Erreur: ${response.body}')));
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      setState(() => _isSubmitting = false);
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Propriété ajoutée avec succès')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${response.statusCode} - ${response.body}'),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error during request: $e');
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de connexion au serveur: $e')),
+      );
     }
   }
 
@@ -112,6 +157,9 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Champ requis' : null,
               ),
               TextFormField(
                 controller: _adresseController,
@@ -130,11 +178,22 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
               TextFormField(
                 controller: _codePostalController,
                 decoration: const InputDecoration(labelText: 'Code postal'),
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Champ requis' : null,
               ),
               TextFormField(
                 controller: _superficieController,
                 decoration: const InputDecoration(labelText: 'Superficie (m²)'),
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Champ requis';
+                  if (double.tryParse(value) == null ||
+                      double.parse(value) <= 0) {
+                    return 'Veuillez entrer un nombre valide supérieur à 0';
+                  }
+                  return null;
+                },
               ),
               TextFormField(
                 controller: _nombrePiecesController,
@@ -142,6 +201,13 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
                   labelText: 'Nombre de pièces',
                 ),
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Champ requis';
+                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                    return 'Veuillez entrer un nombre valide supérieur à 0';
+                  }
+                  return null;
+                },
               ),
               TextFormField(
                 controller: _nombreColocController,
@@ -149,11 +215,26 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
                   labelText: 'Capacité de colocataires',
                 ),
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Champ requis';
+                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                    return 'Veuillez entrer un nombre valide supérieur à 0';
+                  }
+                  return null;
+                },
               ),
               TextFormField(
                 controller: _loyerController,
                 decoration: const InputDecoration(labelText: 'Loyer (DA)'),
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Champ requis';
+                  if (double.tryParse(value) == null ||
+                      double.parse(value) <= 0) {
+                    return 'Veuillez entrer un nombre valide supérieur à 0';
+                  }
+                  return null;
+                },
               ),
               DropdownButtonFormField<String>(
                 value: _typeLogement,
@@ -170,6 +251,7 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
                   DropdownMenuItem(value: 'chambre', child: Text('Chambre')),
                 ],
                 onChanged: (value) => setState(() => _typeLogement = value!),
+                validator: (value) => value == null ? 'Champ requis' : null,
               ),
               TextFormField(
                 controller: _dateDispoController,
@@ -177,11 +259,14 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
                   labelText: 'Disponible à partir',
                 ),
                 readOnly: true,
+                validator:
+                    (value) =>
+                        value == null || value.isEmpty ? 'Champ requis' : null,
                 onTap: () async {
                   final date = await showDatePicker(
                     context: context,
                     initialDate: DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                    firstDate: DateTime.now(),
                     lastDate: DateTime(2100),
                   );
                   if (date != null) {
@@ -205,7 +290,7 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
                 onPressed: _isSubmitting ? null : _submitForm,
                 child:
                     _isSubmitting
-                        ? const CircularProgressIndicator()
+                        ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Ajouter'),
               ),
             ],
@@ -213,5 +298,20 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _adresseController.dispose();
+    _villeController.dispose();
+    _codePostalController.dispose();
+    _superficieController.dispose();
+    _nombrePiecesController.dispose();
+    _nombreColocController.dispose();
+    _loyerController.dispose();
+    _dateDispoController.dispose();
+    super.dispose();
   }
 }

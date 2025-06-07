@@ -20,9 +20,10 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Create a logement
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/create', async (req, res) => {
   try {
     const {
+      proprietaire_id,
       titre,
       description,
       loyer,
@@ -37,7 +38,6 @@ router.post('/', authenticateToken, async (req, res) => {
       charges_incluses,
       meuble,
     } = req.body;
-    const proprietaire_id = req.userId; // From JWT
     const logement = await Logement.createLogement({
       proprietaire_id,
       titre,

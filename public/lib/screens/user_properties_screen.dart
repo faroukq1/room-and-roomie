@@ -80,7 +80,7 @@ class UserPropertiesScreen extends StatefulWidget {
 class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
   final storage = const FlutterSecureStorage();
   final String baseUrl =
-      'http://192.168.1.x:3000'; // Replace with your server's IP
+      'http://10.0.2.2:3000'; // Replace with your server's IP
 
   List<UserProperty> _properties = [];
   bool _isLoading = true;
