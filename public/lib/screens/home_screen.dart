@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // Coloc Model
@@ -48,7 +46,6 @@ class ColocModel {
   });
 
   factory ColocModel.fromJson(Map<String, dynamic> json) {
-    print('Creating ColocModel from JSON: $json'); // Debug print
     try {
       return ColocModel(
         userId: json['user_id'] ?? 0,
@@ -138,33 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'https://images.unsplash.com/photo-1565183997392-2f6f122e5912?ixlib=rb-4.0.3',
   ];
 
-  // Algerian wilayas
-  final List<String> _algerianWilayas = [
-    'South Arielle',
-    'Marieport',
-    'Mélissandremouth',
-    'Sousse',
-    'Béja',
-    'Gafsa',
-    'Le Kef',
-    'La Manouba',
-    'Médenine',
-    'Nabeul',
-    'Siliana',
-    'Jendouba',
-    'Kairouan',
-    'Kasserine',
-    'Alger',
-    'Oran',
-    'Constantine',
-    'Annaba',
-    'Blida',
-    'Tlemcen',
-    'Sétif',
-    'Batna',
-    'Boumerdès',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -203,8 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        print('API Response: $responseData'); // Debug print
-
         // Extract properties from logements array
         final List<dynamic> properties = responseData['logements'] ?? [];
 
@@ -213,12 +181,6 @@ class _HomeScreenState extends State<HomeScreen> {
         final bool hasNextPage = pagination['hasNextPage'] ?? false;
         final int totalPages = pagination['totalPages'] ?? 1;
         final int currentPage = pagination['currentPage'] ?? 1;
-
-        print('Properties length: ${properties.length}'); // Debug print
-        print('Has next page: $hasNextPage'); // Debug print
-        print('Total pages: $totalPages'); // Debug print
-        print('Current page: $currentPage'); // Debug print
-
         final newProperties =
             properties
                 .map(
@@ -266,7 +228,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
-      print('Error details: $e'); // Debug print
       setState(() {
         _errorMessage = 'Error fetching properties: $e';
         _isLoading = false;
@@ -300,9 +261,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      print('Fetching colocs for page: $_currentColocsPage'); // Debug print
-      print('Using token: $token'); // Debug print
-
       final response = await http.get(
         Uri.parse(
           '$baseUrl/api/colocs?page=$_currentColocsPage&limit=$_colocsLimit',
@@ -313,16 +271,11 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      print('Response status code: ${response.statusCode}'); // Debug print
-      print('Response body: ${response.body}'); // Debug print
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        print('Parsed response data: $responseData'); // Debug print
 
         // Extract colocs data using the correct key 'colocataires'
         final List<dynamic> colocs = responseData['colocataires'] ?? [];
-        print('Extracted colocs: $colocs'); // Debug print
 
         // Extract pagination info
         final Map<String, dynamic> pagination = responseData['pagination'];
@@ -330,18 +283,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final int totalPages = pagination['totalPages'] ?? 1;
         final int currentPage = pagination['currentPage'] ?? 1;
 
-        print('Pagination info:'); // Debug print
-        print('hasNextPage: $hasNextPage'); // Debug print
-        print('totalPages: $totalPages'); // Debug print
-        print('currentPage: $currentPage'); // Debug print
-
         final List<ColocModel> newColocs =
             colocs.map<ColocModel>((item) {
-              print('Processing coloc item: $item'); // Debug print
               return ColocModel.fromJson(item);
             }).toList();
-
-        print('Processed ${newColocs.length} colocs'); // Debug print
 
         setState(() {
           _colocs = newColocs;
@@ -351,7 +296,6 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoadingMoreColocs = false;
         });
       } else {
-        print('Error response: ${response.body}'); // Debug print
         setState(() {
           _errorMessageColocs = 'Failed to load colocs: ${response.statusCode}';
           _isLoadingColocs = false;
@@ -359,8 +303,6 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e, stackTrace) {
-      print('Error fetching colocs: $e'); // Debug print
-      print('Stack trace: $stackTrace'); // Debug print
       setState(() {
         _errorMessageColocs = 'Error fetching colocs: $e';
         _isLoadingColocs = false;
@@ -400,9 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
       }
-    } catch (e) {
-      print('Error fetching favorites: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _toggleFavorite(int logementId) async {
@@ -422,11 +362,6 @@ class _HomeScreenState extends State<HomeScreen> {
       // Parse user data to get ID
       final userData = jsonDecode(userDataStr);
       final userId = userData['id'];
-
-      print(
-        'Making API call to add favorite - LogementId: $logementId, UserId: $userId',
-      );
-
       final response = await http.post(
         Uri.parse('$baseUrl/api/logements/favorites/add'),
         headers: {
@@ -435,10 +370,6 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         body: jsonEncode({'logementId': logementId, 'userId': userId}),
       );
-
-      print('API Response Status Code: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
           final propertyIndex = _properties.indexWhere(
@@ -461,8 +392,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e, stackTrace) {
-      print('Error in _toggleFavorite: $e');
-      print('Stack trace: $stackTrace');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
@@ -1105,54 +1034,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const Divider(height: 1),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: _algerianWilayas.length,
-                          itemBuilder: (context, index) {
-                            final wilaya = _algerianWilayas[index];
-                            if (_searchController.text.isEmpty ||
-                                wilaya.toLowerCase().contains(
-                                  _searchController.text.toLowerCase(),
-                                )) {
-                              return Column(
-                                children: [
-                                  ListTile(
-                                    leading: Radio<String>(
-                                      value: wilaya,
-                                      groupValue: null,
-                                      onChanged:
-                                          (value) => setState(() {
-                                            _searchController.text =
-                                                value ?? '';
-                                            _showLocationSearch = false;
-                                            _selectedLocation = value ?? '';
-                                            _showPropertyList = true;
-                                          }),
-                                    ),
-                                    title: Text(
-                                      wilaya,
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
-                                    onTap:
-                                        () => setState(() {
-                                          _searchController.text = wilaya;
-                                          _showLocationSearch = false;
-                                          _selectedLocation = wilaya;
-                                          _showPropertyList = true;
-                                        }),
-                                  ),
-                                  const Divider(
-                                    height: 1,
-                                    indent: 16,
-                                    endIndent: 16,
-                                  ),
-                                ],
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -1496,18 +1377,50 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// Property Detail Page
 class PropertyDetailPage extends StatelessWidget {
   final Map<String, dynamic> property;
 
   const PropertyDetailPage({super.key, required this.property});
 
+  void _buyProperty(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmer l\'achat'),
+            content: Text(
+              'Voulez-vous acheter la propriété "${property['title']}" pour ${property['price'].toStringAsFixed(2)} DA ?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Achat de "${property['title']}" en cours...',
+                      ),
+                    ),
+                  );
+                  Navigator.pop(context);
+                },
+                child: const Text('Confirmer'),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final proprietaire = property['proprietaire'] as Map<String, dynamic>;
+    final proprietaire =
+        property['proprietaire'] as Map<String, dynamic>? ?? {};
 
     return Scaffold(
-      appBar: AppBar(title: Text(property['title'])),
+      appBar: AppBar(title: Text(property['title'] ?? 'Propriété')),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1515,7 +1428,9 @@ class PropertyDetailPage extends StatelessWidget {
             AspectRatio(
               aspectRatio: 16 / 9,
               child: Image.network(
-                property['images'][0],
+                (property['images'] != null && property['images'].isNotEmpty)
+                    ? property['images'][0]
+                    : 'https://via.placeholder.com/400',
                 fit: BoxFit.cover,
                 errorBuilder:
                     (context, error, stackTrace) => Container(
@@ -1530,7 +1445,7 @@ class PropertyDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    property['title'],
+                    property['title'] ?? 'Sans titre',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -1540,7 +1455,7 @@ class PropertyDetailPage extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${property['price'].toStringAsFixed(2)} DA',
+                        '${(property['price'] ?? 0.0).toStringAsFixed(2)} DA',
                         style: const TextStyle(
                           fontSize: 20,
                           color: Colors.blue,
@@ -1559,11 +1474,11 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    property['location'],
+                    property['location'] ?? 'Non spécifié',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   Text(
-                    'Code Postal: ${property['code_postal']}',
+                    'Code Postal: ${property['code_postal'] ?? 'Non spécifié'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
@@ -1573,19 +1488,19 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    property['details'],
+                    property['details'] ?? 'Non spécifié',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   Text(
-                    'Type: ${property['type']}',
+                    'Type: ${property['type'] ?? 'Non spécifié'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   Text(
-                    'Meublé: ${property['meuble'] ? 'Oui' : 'Non'}',
+                    'Meublé: ${property['meuble'] == true ? 'Oui' : 'Non'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   Text(
-                    'Capacité max. colocataires: ${property['capacite_max_colocataires']}',
+                    'Capacité max. colocataires: ${property['capacite_max_colocataires'] ?? 0}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 16),
@@ -1595,7 +1510,7 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    property['description'],
+                    property['description'] ?? 'Aucune description',
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 16),
@@ -1605,38 +1520,61 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${proprietaire['prenom']} ${proprietaire['nom']}',
+                    '${proprietaire['prenom'] ?? 'Inconnu'} ${proprietaire['nom'] ?? ''}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   Text(
-                    'Tél: ${proprietaire['telephone']}',
+                    'Tél: ${proprietaire['telephone'] ?? 'Non spécifié'}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   Text(
-                    'Email: ${proprietaire['email']}',
+                    'Email: ${proprietaire['email'] ?? 'Non spécifié'}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Disponible à partir du: ${property['disponible_a_partir'].toString().split('T')[0]}',
+                    'Disponible à partir du: ${property['disponible_a_partir']?.toString().split('T')[0] ?? 'Non spécifié'}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed:
-                          () =>
-                              Navigator.pushReplacementNamed(context, '/inbox'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed:
+                              () => Navigator.pushReplacementNamed(
+                                context,
+                                '/inbox',
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: const Text('Contacter'),
                         ),
                       ),
-                      child: const Text('Contacter le propriétaire'),
-                    ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed:
+                              () => Navigator.pushReplacementNamed(
+                                context,
+                                '/payment',
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: const Text('Acheter'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

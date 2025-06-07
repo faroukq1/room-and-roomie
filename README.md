@@ -1,6 +1,5 @@
 ### **For Tenants / Roommates**
 
-* Search for a rental or roommate using filters (city, price, type of housing, proximity to services, etc.) 
 * Apply to rental or roommate ads 
 * Post a roommate search ad (for users looking for a roommate)
 * Send and receive messages via integrated messaging system
@@ -12,7 +11,6 @@
 ### **For Landlords**
 
 * Create a professional or individual account
-* Add a rental listing (photos, price, description, location, etc.)
 * Manage properties from an intuitive dashboard
 * Receive and process applications, filter according to preferences
 * Use a dedicated messaging system to chat with applicants

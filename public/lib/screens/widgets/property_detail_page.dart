@@ -20,10 +20,11 @@ class PropertyDetailPage extends StatelessWidget {
               child: Image.network(
                 property['images'][0],
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  child: const Center(child: Text('Image non disponible')),
-                ),
+                errorBuilder:
+                    (context, error, stackTrace) => Container(
+                      color: Colors.grey[300],
+                      child: const Center(child: Text('Image non disponible')),
+                    ),
               ),
             ),
             Padding(
