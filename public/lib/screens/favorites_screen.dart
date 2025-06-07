@@ -27,26 +27,36 @@ class FavoriteProperty {
   final Map<String, dynamic> proprietaire;
 
   FavoriteProperty.fromJson(Map<String, dynamic> json)
-    : id = json['id'],
-      titre = json['titre'],
-      description = json['description'],
-      adresse = json['adresse'],
-      ville = json['ville'],
-      codePostal = json['code_postal'],
-      superficie = double.parse(json['superficie']),
-      nombrePieces = json['nombre_pieces'],
-      nombreColocMax = json['nombre_coloc_max'],
-      typeLogement = json['type_logement'],
-      loyer = double.parse(json['loyer']),
-      chargesIncluses = json['charges_incluses'],
-      meuble = json['meuble'],
-      disponibleAPartir = DateTime.parse(json['disponible_a_partir']),
-      dateCreation = DateTime.parse(json['date_creation']),
-      estActif = json['est_actif'],
-      capaciteMaxColocataires = json['capacite_max_colocataires'],
-      proprietaireId = json['proprietaire_id'],
-      favorisDate = DateTime.parse(json['favoris_date']),
-      proprietaire = json['proprietaire'];
+    : id = json['id'] ?? 0,
+      titre = json['titre'] ?? '',
+      description = json['description'] ?? '',
+      adresse = json['adresse'] ?? '',
+      ville = json['ville'] ?? '',
+      codePostal = json['code_postal'] ?? '',
+      superficie =
+          (json['superficie'] != null)
+              ? double.tryParse(json['superficie'].toString()) ?? 0.0
+              : 0.0,
+      nombrePieces = json['nombre_pieces'] ?? 0,
+      nombreColocMax = json['nombre_coloc_max'] ?? 0,
+      typeLogement = json['type_logement'] ?? '',
+      loyer =
+          (json['loyer'] != null)
+              ? double.tryParse(json['loyer'].toString()) ?? 0.0
+              : 0.0,
+      chargesIncluses = json['charges_incluses'] ?? false,
+      meuble = json['meuble'] ?? false,
+      disponibleAPartir =
+          DateTime.tryParse(json['disponible_a_partir'] ?? '') ??
+          DateTime.now(),
+      dateCreation =
+          DateTime.tryParse(json['date_creation'] ?? '') ?? DateTime.now(),
+      estActif = json['est_actif'] ?? false,
+      capaciteMaxColocataires = json['capacite_max_colocataires'] ?? 0,
+      proprietaireId = json['proprietaire_id'] ?? 0,
+      favorisDate =
+          DateTime.tryParse(json['favoris_date'] ?? '') ?? DateTime.now(),
+      proprietaire = json['proprietaire'] ?? {};
 }
 
 class FavoritesScreen extends StatefulWidget {
@@ -87,7 +97,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         return;
       }
 
-      // Parse user data to get ID
       final user = jsonDecode(userData);
       final userId = user['id'];
 
@@ -135,8 +144,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         return;
       }
 
-      print('Removing favorite for property ID: $propertyId');
-
       final response = await http.delete(
         Uri.parse('http://10.0.2.2:3000/api/logements/favorites/$propertyId'),
         headers: {
@@ -144,9 +151,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('API Response Status Code: ${response.statusCode}');
-      print('API Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
         setState(() {
@@ -181,7 +185,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // App Bar
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -198,8 +201,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ],
               ),
             ),
-
-            // Favorites content
             Expanded(
               child:
                   _isLoading
@@ -238,30 +239,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         },
                       ),
             ),
-
-            // Bottom Navigation Bar
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(0, Icons.home, 'Home'),
-                  _buildNavItem(1, Icons.favorite_border, 'Favoris'),
-                  _buildNavItem(2, Icons.article_outlined, 'Inbox'),
-                  _buildNavItem(3, Icons.person_outline, 'Profile'),
-                ],
-              ),
-            ),
+            _buildBottomNavigationBar(),
           ],
         ),
       ),
@@ -315,7 +293,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
         child: Row(
           children: [
-            // Property Type Icon
             Container(
               width: 100,
               height: 100,
@@ -334,7 +311,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 color: Colors.grey[600],
               ),
             ),
-            // Details
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -370,7 +346,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 ),
               ),
             ),
-            // Favorite icon
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: IconButton(
@@ -384,14 +359,29 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  String _getPlaceholderImage(int id) {
-    final List<String> imageUrls = [
-      'https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?ixlib=rb-4.0.3',
-      'https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3',
-      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3',
-      'https://images.unsplash.com/photo-1565183997392-2f6f122e5912?ixlib=rb-4.0.3',
-    ];
-    return imageUrls[id % imageUrls.length];
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(0, Icons.home, 'Home'),
+          _buildNavItem(1, Icons.favorite_border, 'Favoris'),
+          _buildNavItem(2, Icons.article_outlined, 'Inbox'),
+          _buildNavItem(3, Icons.person_outline, 'Profile'),
+        ],
+      ),
+    );
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
@@ -434,5 +424,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ],
       ),
     );
+  }
+
+  String _getPlaceholderImage(int id) {
+    final List<String> imageUrls = [
+      'https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?ixlib=rb-4.0.3',
+      'https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3',
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3',
+      'https://images.unsplash.com/photo-1565183997392-2f6f122e5912?ixlib=rb-4.0.3',
+    ];
+    return imageUrls[id % imageUrls.length];
   }
 }

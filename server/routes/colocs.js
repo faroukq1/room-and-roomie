@@ -3,22 +3,9 @@ const router = express.Router();
 const pool = require('../config');
 const jwt = require('jsonwebtoken');
 
-// Middleware to authenticate JWT
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'No token provided' });
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.userId;
-        next();
-    } catch (err) {
-        res.status(401).json({ message: 'Invalid token' });
-    }
-};
 
 // Get all colocataires with pagination
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
@@ -86,7 +73,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get details of a specific colocation
-router.get('/colocation/:id', authenticateToken, async (req, res) => {
+router.get('/colocation/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const query = `

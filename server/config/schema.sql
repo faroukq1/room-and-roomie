@@ -78,9 +78,6 @@ CREATE TABLE candidatures (
     UNIQUE(logement_id, locataire_id)
 );
 
-select * from favoris;
-
-
 -- Table Favoris
 CREATE TABLE favoris (
     id SERIAL PRIMARY KEY,

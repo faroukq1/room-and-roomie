@@ -1,7 +1,7 @@
 ### **For Tenants / Roommates**
 
 * Apply to rental or roommate ads 
-* Post a roommate search ad (for users looking for a roommate)
+* Post a roommate search ad (for users looking for a roommate) (this)
 * Send and receive messages via integrated messaging system
 * Make secure payments (deposit, first rent, etc.)
 * Rate rentals and landlords after an experience
@@ -10,11 +10,9 @@
 
 ### **For Landlords**
 
-* Create a professional or individual account
+* Create a professional or individual account (dont do it)
 * Manage properties from an intuitive dashboard
 * Receive and process applications, filter according to preferences
-* Use a dedicated messaging system to chat with applicants
-* Track booking and payment history
 * Edit or disable listings at any time
 * View listing visibility and performance statistics
 

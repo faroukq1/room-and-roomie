@@ -5,19 +5,6 @@ const Logement = require('../models/Logement');
 const jwt = require('jsonwebtoken');
 const pool = require('../config');
 
-// Middleware to authenticate JWT
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
 
 // Create a logement
 router.post('/create', async (req, res) => {
@@ -280,7 +267,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update logement
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const logement = await Logement.getLogementById(req.params.id);
     if (!logement) return res.status(404).json({ message: 'Logement not found' });
@@ -311,7 +298,7 @@ router.get('/search', async (req, res) => {
 });
 
 // Add property to favorites
-router.post('/favorites/add', authenticateToken, async (req, res) => {
+router.post('/favorites/add', async (req, res) => {
   try {
     const { logementId, userId } = req.body;
 
@@ -346,7 +333,7 @@ router.post('/favorites/add', authenticateToken, async (req, res) => {
 });
 
 // Get user's favorite properties
-router.get('/favorites/:userId', authenticateToken, async (req, res) => {
+router.get('/favorites/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
     const query = `
@@ -376,7 +363,7 @@ router.get('/favorites/:userId', authenticateToken, async (req, res) => {
 });
 
 // Remove property from favorites
-router.delete('/favorites/:logementId', authenticateToken, async (req, res) => {
+router.delete('/favorites/:logementId', async (req, res) => {
   try {
     const { logementId } = req.params;
     const userId = req.userId;
