@@ -193,6 +193,61 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     }
   }
 
+  Future<void> _deleteProperty(int propertyId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmer la suppression'),
+            content: const Text(
+              'Êtes-vous sûr de vouloir supprimer cette propriété ?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Supprimer',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/logements/$propertyId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Propriété supprimée avec succès')),
+        );
+        // Refresh the list after deletion
+        _fetchUserProperties();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erreur lors de la suppression : ${response.statusCode}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de connexion au serveur : $e')),
+      );
+    }
+  }
+
   void _addNewProperty() {
     Navigator.pushNamed(
       context,
@@ -340,20 +395,12 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                       ),
                     ),
                     Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Row(
-                        children: [
-                          _buildBadge(
-                            Icons.favorite,
-                            '${property.nombreFavoris}',
-                          ),
-                          const SizedBox(width: 8),
-                          _buildBadge(
-                            Icons.people,
-                            '${property.candidaturesEnAttente}',
-                          ),
-                        ],
+                      top: -5,
+                      left: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        tooltip: 'Supprimer cette annonce',
+                        onPressed: () => _deleteProperty(property.id),
                       ),
                     ),
                   ],
@@ -361,57 +408,57 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     property.titre,
                     style: const TextStyle(
-                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${property.loyer.toStringAsFixed(2)} DA',
-                    style: const TextStyle(color: Colors.blue),
+                    property.description,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${property.adresse}, ${property.ville}',
-                    style: TextStyle(color: Colors.grey[600]),
+                    '${property.nombrePieces} pièce${property.nombrePieces != 1 ? 's' : ''} • ${property.superficie} m²',
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
-                    '${property.nombrePieces} pièces • ${property.superficie} m²',
-                    style: TextStyle(color: Colors.grey[600]),
+                    '${property.adresse}, ${property.ville} ${property.codePostal}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Loyer: ${property.loyer} €${property.chargesIncluses ? ' (charges incluses)' : ''}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Disponible à partir du: ${property.disponibleAPartir.toLocal().toString().split(' ')[0]}',
+                    style: const TextStyle(fontSize: 12),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(
-                        property.typeLogement == 'maison'
-                            ? Icons.house
-                            : Icons.apartment,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        StringExtension(property.typeLogement).capitalize(),
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(
-                        property.meuble ? Icons.chair : Icons.chair_outlined,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        property.meuble ? 'Meublé' : 'Non meublé',
-                        style: TextStyle(color: Colors.grey[600]),
+                      Chip(label: Text('Favoris: ${property.nombreFavoris}')),
+                      const SizedBox(width: 8),
+                      Chip(
+                        label: Text(
+                          'Candidatures en attente: ${property.candidaturesEnAttente}',
+                        ),
                       ),
                     ],
                   ),
@@ -424,91 +471,76 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     );
   }
 
-  Widget _buildBadge(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 4),
-          Text(text, style: const TextStyle(color: Colors.white)),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFCCDEF9),
-      appBar: AppBar(
-        title: const Text('Mes Propriétés'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.blue),
-            onPressed: _addNewProperty,
-            tooltip: 'Add New Property',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Mes propriétés')),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _errorMessage != null
               ? Center(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       _errorMessage!,
                       style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => _fetchUserProperties(),
-                      child: const Text('Réessayer'),
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/login');
+                      },
+                      child: const Text('Se connecter'),
                     ),
                   ],
                 ),
               )
               : _properties.isEmpty
-              ? const Center(
-                child: Text('Vous n\'avez pas encore de propriétés'),
+              ? Center(
+                child: Text(
+                  'Vous n\'avez pas encore publié d\'annonces.\nAppuyez sur le bouton "+" pour en ajouter.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
               )
-              : Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _properties.length,
-                      itemBuilder:
-                          (context, index) =>
-                              _buildPropertyCard(_properties[index]),
-                    ),
-                  ),
-                  if (_isLoadingMore)
-                    const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: CircularProgressIndicator(),
-                    ),
-                  if (!_isLoadingMore) _buildPaginationControls(),
-                ],
+              : RefreshIndicator(
+                onRefresh: () async {
+                  _currentPage = 1;
+                  await _fetchUserProperties();
+                },
+                child: ListView.builder(
+                  itemCount: _properties.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == _properties.length) {
+                      return _buildPaginationControls();
+                    }
+                    final property = _properties[index];
+                    return _buildPropertyCard(property);
+                  },
+                ),
               ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addNewProperty,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
 
-extension StringExtension on String {
-  String capitalize() =>
-      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+class PropertyDetailPage extends StatelessWidget {
+  final Map<String, dynamic> property;
+  const PropertyDetailPage({super.key, required this.property});
+
+  @override
+  Widget build(BuildContext context) {
+    // Implement your property details page here
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(property['title'] ?? 'Détails de la propriété'),
+      ),
+      body: Center(child: Text('Détails complets ici...')),
+    );
+  }
 }
