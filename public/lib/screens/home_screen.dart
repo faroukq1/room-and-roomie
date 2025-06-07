@@ -102,8 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showPropertyList = false;
   String _selectedLocation = '';
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _searchResults = [];
-  bool _isLoading = false;
 
   // Pagination state for properties
   int _currentPage = 1;
@@ -199,25 +197,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      // Build filter parameters
-      Map<String, String> filterParams = {
-        'page': _currentPage.toString(),
-        'limit': _limit.toString(),
-        'propertyType': _currentPropertyType,
-        'propertySubType': _currentPropertySubType,
-        'priceMin': _currentPriceRange.start.toString(),
-        'priceMax': _currentPriceRange.end.toString(),
-        'bedrooms': _currentBedrooms,
-        'areaMin': _currentAreaRange.start.toString(),
-        'areaMax': _currentAreaRange.end.toString(),
-      };
-
-      // Remove empty parameters
-      filterParams.removeWhere((key, value) => value.isEmpty);
-
-      // Make API call with filter parameters
       final response = await http.get(
-        Uri.parse('$baseUrl/api/logements/filter?${Uri(queryParameters: filterParams).query}'),
+        Uri.parse('$baseUrl/api/logements?page=$_currentPage&limit=$_limit'),
       );
 
       if (response.statusCode == 200) {
@@ -1398,9 +1379,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 setState(() {
                   _currentPage = 1;
-                  _hasMorePages = true;
-                  _fetchProperties();
                 });
+                _fetchProperties();
               },
               child: const Text('Réessayer'),
             ),
