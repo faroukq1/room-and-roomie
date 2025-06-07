@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import 'login_signup.dart';
+
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -19,6 +17,7 @@ class WelcomeScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    const SizedBox(height: 20),
                     const Text(
                       'ROOM & ROOMIE',
                       style: TextStyle(
@@ -36,11 +35,6 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    Image.asset(
-                      'assets/images/welcome.png',
-                      width: 200,
-                      height: 200,
-                    ),
                   ],
                 ),
               ),
