@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 
 class PaymentPage extends StatefulWidget {
-  const PaymentPage({super.key});
+  final String title;
+  final double price;
+  final String imageUrl;
+  final String details;
+  final String location;
+
+  const PaymentPage({
+    super.key,
+    required this.title,
+    required this.price,
+    required this.imageUrl,
+    required this.details,
+    required this.location,
+  });
 
   @override
   State<PaymentPage> createState() => _PaymentPageState();
@@ -58,10 +71,7 @@ class _PaymentPageState extends State<PaymentPage> {
                 children: [
                   const Text(
                     'Résumé de la réservation',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -69,31 +79,31 @@ class _PaymentPageState extends State<PaymentPage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          'https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?ixlib=rb-4.0.3',
+                          widget.imageUrl,
                           width: 80,
                           height: 60,
                           fit: BoxFit.cover,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '7000 DA / mois',
-                              style: TextStyle(
+                              '${widget.price.toStringAsFixed(2)} DA / mois',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              '2 chambres / 1 salle de bain',
-                              style: TextStyle(fontSize: 14),
+                              widget.details,
+                              style: const TextStyle(fontSize: 14),
                             ),
                             Text(
-                              'près de Anubia',
-                              style: TextStyle(
+                              widget.location,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey,
                               ),
@@ -112,71 +122,11 @@ class _PaymentPageState extends State<PaymentPage> {
             // Payment Method Selection
             const Text(
               'Méthode de paiement',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildPaymentMethodTile(
-              'credit_card',
-              'Carte de crédit',
-              Icons.credit_card,
-            ),
-            _buildPaymentMethodTile(
-              'paypal',
-              'PayPal',
-              Icons.payment,
-            ),
-            _buildPaymentMethodTile(
-              'bank_transfer',
-              'Virement bancaire',
-              Icons.account_balance,
-            ),
-
-            // Credit Card Form (shown only when credit card is selected)
-            if (_selectedMethod == 'credit_card') ...[
-              const SizedBox(height: 24),
-              const Text(
-                'Détails de la carte',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildInputField(
-                controller: _cardController,
-                label: 'Numéro de carte',
-                hint: '1234 5678 9012 3456',
-                icon: Icons.credit_card,
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildInputField(
-                      controller: _dateController,
-                      label: 'Date d\'expiration',
-                      hint: 'MM/AA',
-                      icon: Icons.calendar_today,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildInputField(
-                      controller: _cvvController,
-                      label: 'CVV',
-                      hint: '123',
-                      icon: Icons.lock,
-                      obscureText: true,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
+            _buildPaymentMethodTile('paypal', 'PayPal', Icons.payment),
             const SizedBox(height: 32),
-
             // Payment Summary
             Container(
               decoration: BoxDecoration(
@@ -193,26 +143,23 @@ class _PaymentPageState extends State<PaymentPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Prix mensuel'),
-                      Text('7000 DA'),
+                      const Text('Prix mensuel'),
+                      Text('${widget.price.toStringAsFixed(2)} DA'),
                     ],
                   ),
                   const SizedBox(height: 8),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Frais de service'),
-                      Text('500 DA'),
-                    ],
+                    children: [Text('Frais de service'), Text('500 DA')],
                   ),
                   const Divider(height: 24),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'Total',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -220,8 +167,8 @@ class _PaymentPageState extends State<PaymentPage> {
                         ),
                       ),
                       Text(
-                        '7500 DA',
-                        style: TextStyle(
+                        '${(widget.price + 500).toStringAsFixed(2)} DA',
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -301,10 +248,7 @@ class _PaymentPageState extends State<PaymentPage> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 4),
           TextField(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'paymentpage.dart';
 
 // Coloc Model
 class ColocModel {
@@ -1559,11 +1560,29 @@ class PropertyDetailPage extends StatelessWidget {
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed:
-                              () => Navigator.pushReplacementNamed(
-                                context,
-                                '/payment',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => PaymentPage(
+                                      title: property['title'] ?? '',
+                                      price:
+                                          (property['price'] ?? 0.0) is int
+                                              ? (property['price'] ?? 0.0)
+                                                  .toDouble()
+                                              : (property['price'] ?? 0.0),
+                                      imageUrl:
+                                          (property['images'] != null &&
+                                                  property['images'].isNotEmpty)
+                                              ? property['images'][0]
+                                              : 'https://via.placeholder.com/400',
+                                      details: property['details'] ?? '',
+                                      location: property['location'] ?? '',
+                                    ),
                               ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
