@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
+import '../models/property_model.dart';
+
 class PropertyState {
   final int currentPage;
   final int limit;
   final bool hasMorePages;
   final bool isLoadingMore;
-  final List<Map<String, dynamic>> properties;
+  final List<PropertyModel> properties;
 
   PropertyState({
     required this.currentPage,
@@ -18,7 +21,7 @@ class PropertyState {
     int? limit,
     bool? hasMorePages,
     bool? isLoadingMore,
-    List<Map<String, dynamic>>? properties,
+    List<PropertyModel>? properties,
   }) {
     return PropertyState(
       currentPage: currentPage ?? this.currentPage,
