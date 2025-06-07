@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'user_properties_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'settings_screen.dart';
+import 'ProprietaireDashboard.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -197,11 +197,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 children: [
-                  _buildMenuItem(Icons.home_work, 'Mes propriétés', () {
+                  _buildMenuItem(Icons.dashboard, 'Dashboard', () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const UserPropertiesScreen(),
+                        builder: (context) => const ProprietaireDashboard(),
                       ),
                     );
                   }),
