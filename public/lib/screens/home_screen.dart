@@ -102,6 +102,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showPropertyList = false;
   String _selectedLocation = '';
   final TextEditingController _searchController = TextEditingController();
+  List<dynamic> _searchResults = [];
+  bool _isLoading = false;
 
   // Pagination state for properties
   int _currentPage = 1;

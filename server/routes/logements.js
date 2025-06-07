@@ -60,11 +60,64 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Search logements by name
+router.get('/search', async (req, res) => {
+  try {
+    const searchTerm = req.query.name || '';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+
+    // Get total count of matching logements
+    const countQuery = `
+      SELECT COUNT(*) 
+      FROM logements 
+      WHERE est_actif = true 
+      AND titre ILIKE '%' || $1 || '%'
+    `;
+    const totalCount = await pool.query(countQuery, [searchTerm]);
+    const total = parseInt(totalCount.rows[0].count);
+
+    // Get paginated search results
+    const query = `
+      SELECT 
+        l.*,
+        json_build_object(
+          'id', u.id,
+          'nom', u.nom,
+          'prenom', u.prenom,
+          'email', u.email,
+          'telephone', u.telephone
+        ) as proprietaire
+      FROM logements l
+      JOIN users u ON l.proprietaire_id = u.id
+      WHERE l.est_actif = true
+      AND l.titre ILIKE '%' || $1 || '%'
+      ORDER BY l.date_creation DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const result = await pool.query(query, [searchTerm, limit, offset]);
+    
+    res.json({
+      logements: result.rows,
+      pagination: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get all logements with pagination
 router.get('/', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; // Default to page 1
-    const limit = parseInt(req.query.limit) || 5; // Default to 5 items per page
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
     const offset = (page - 1) * limit;
 
     // Get total count of logements
