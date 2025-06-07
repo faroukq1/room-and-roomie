@@ -43,11 +43,11 @@ class UserProperty {
       adresse = json['adresse'],
       ville = json['ville'],
       codePostal = json['code_postal'],
-      superficie = double.parse(json['superficie']),
+      superficie = double.parse(json['superficie'].toString()),
       nombrePieces = json['nombre_pieces'],
       nombreColocMax = json['nombre_coloc_max'],
       typeLogement = json['type_logement'],
-      loyer = double.parse(json['loyer']),
+      loyer = double.parse(json['loyer'].toString()),
       chargesIncluses = json['charges_incluses'],
       meuble = json['meuble'],
       disponibleAPartir = DateTime.parse(json['disponible_a_partir']),
@@ -59,8 +59,10 @@ class UserProperty {
           (json['photos'] as List<dynamic>)
               .map((photo) => PropertyPhoto.fromJson(photo))
               .toList(),
-      nombreFavoris = int.parse(json['nombre_favoris']),
-      candidaturesEnAttente = int.parse(json['candidatures_en_attente']);
+      nombreFavoris = int.parse(json['nombre_favoris'].toString()),
+      candidaturesEnAttente = int.parse(
+        json['candidatures_en_attente'].toString(),
+      );
 }
 
 class UserPropertiesScreen extends StatefulWidget {
@@ -132,7 +134,6 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> properties = responseData['logements'] ?? [];
 
-        // Extract pagination info
         final Map<String, dynamic> pagination = responseData['pagination'];
         final bool hasNextPage = pagination['hasNextPage'] ?? false;
         final int currentPage = pagination['currentPage'] ?? 1;
@@ -166,6 +167,13 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     }
   }
 
+  void _addNewProperty() {
+    Navigator.pushNamed(
+      context,
+      '/addnewproperty',
+    ).then((_) => _fetchUserProperties());
+  }
+
   String _getPlaceholderImage(int id) {
     final List<String> imageUrls = [
       'https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?ixlib=rb-4.0.3',
@@ -174,6 +182,53 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
       'https://images.unsplash.com/photo-1565183997392-2f6f122e5912?ixlib=rb-4.0.3',
     ];
     return imageUrls[id % imageUrls.length];
+  }
+
+  Widget _buildPaginationControls() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            onPressed:
+                _currentPage > 1
+                    ? () async {
+                      setState(() => _currentPage--);
+                      await _fetchUserProperties();
+                    }
+                    : null,
+            child: const Row(
+              children: [
+                Icon(Icons.arrow_back),
+                SizedBox(width: 4),
+                Text('Précédent'),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Page $_currentPage'),
+          ),
+          ElevatedButton(
+            onPressed:
+                _hasMorePages
+                    ? () async {
+                      setState(() => _currentPage++);
+                      await _fetchUserProperties();
+                    }
+                    : null,
+            child: const Row(
+              children: [
+                Text('Suivant'),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPropertyCard(UserProperty property) {
@@ -201,7 +256,11 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
         property.photos
             .firstWhere(
               (photo) => photo.estPrincipale,
-              orElse: () => property.photos.first,
+              orElse:
+                  () => PropertyPhoto.fromJson({
+                    'url': _getPlaceholderImage(property.id),
+                    'est_principale': true,
+                  }),
             )
             .url;
 
@@ -220,7 +279,6 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Property Image
             AspectRatio(
               aspectRatio: 16 / 9,
               child: Container(
@@ -235,7 +293,6 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                 ),
                 child: Stack(
                   children: [
-                    // Status indicator (Active/Inactive)
                     Positioned(
                       top: 8,
                       right: 8,
@@ -254,60 +311,19 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                         ),
                       ),
                     ),
-                    // Stats indicators (Favorites and Applications)
                     Positioned(
                       bottom: 8,
                       right: 8,
                       child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.favorite,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${property.nombreFavoris}',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
+                          _buildBadge(
+                            Icons.favorite,
+                            '${property.nombreFavoris}',
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.people,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${property.candidaturesEnAttente}',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
+                          _buildBadge(
+                            Icons.people,
+                            '${property.candidaturesEnAttente}',
                           ),
                         ],
                       ),
@@ -316,8 +332,6 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                 ),
               ),
             ),
-
-            // Property Details
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -333,11 +347,7 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '${property.loyer.toStringAsFixed(2)} DA',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(color: Colors.blue),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -356,19 +366,19 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                         property.typeLogement == 'maison'
                             ? Icons.house
                             : Icons.apartment,
-                        color: Colors.grey[600],
                         size: 16,
+                        color: Colors.grey[600],
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        property.typeLogement.capitalize(),
+                        StringExtension(property.typeLogement).capitalize(),
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                       const SizedBox(width: 16),
                       Icon(
                         property.meuble ? Icons.chair : Icons.chair_outlined,
-                        color: Colors.grey[600],
                         size: 16,
+                        color: Colors.grey[600],
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -386,69 +396,18 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     );
   }
 
-  Widget _buildPaginationControls() {
+  Widget _buildBadge(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ElevatedButton(
-            onPressed:
-                _currentPage > 1
-                    ? () async {
-                      setState(() {
-                        _currentPage--;
-                      });
-                      await _fetchUserProperties();
-                    }
-                    : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.arrow_back, size: 16),
-                SizedBox(width: 4),
-                Text('Précédent'),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Page $_currentPage',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ElevatedButton(
-            onPressed:
-                _hasMorePages
-                    ? () async {
-                      setState(() {
-                        _currentPage++;
-                      });
-                      await _fetchUserProperties();
-                    }
-                    : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Text('Suivant'),
-                SizedBox(width: 4),
-                Icon(Icons.arrow_forward, size: 16),
-              ],
-            ),
-          ),
+          Icon(icon, size: 16, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
@@ -460,10 +419,19 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
       backgroundColor: const Color(0xFFCCDEF9),
       appBar: AppBar(
         title: const Text('Mes Propriétés'),
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.blue),
+            onPressed: _addNewProperty,
+            tooltip: 'Add New Property',
+          ),
+        ],
       ),
       body:
           _isLoading
@@ -480,12 +448,7 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _currentPage = 1;
-                        });
-                        _fetchUserProperties();
-                      },
+                      onPressed: () => _fetchUserProperties(),
                       child: const Text('Réessayer'),
                     ),
                   ],
@@ -493,10 +456,7 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
               )
               : _properties.isEmpty
               ? const Center(
-                child: Text(
-                  'Vous n\'avez pas encore de propriétés',
-                  style: TextStyle(fontSize: 16),
-                ),
+                child: Text('Vous n\'avez pas encore de propriétés'),
               )
               : Column(
                 children: [
@@ -508,14 +468,19 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
                               _buildPropertyCard(_properties[index]),
                     ),
                   ),
-                  if (!_isLoadingMore) _buildPaginationControls(),
                   if (_isLoadingMore)
                     const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Center(child: CircularProgressIndicator()),
+                      padding: EdgeInsets.all(8),
+                      child: CircularProgressIndicator(),
                     ),
+                  if (!_isLoadingMore) _buildPaginationControls(),
                 ],
               ),
     );
   }
+}
+
+extension StringExtension on String {
+  String capitalize() =>
+      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
 }

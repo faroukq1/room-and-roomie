@@ -8,6 +8,7 @@ import 'screens/favorites_screen.dart';
 import 'screens/inbox_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/paymentpage.dart';
+import 'screens/AddNewProperty.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,9 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
       child: MaterialApp(
         title: 'ROOM & ROOMIE',
         theme: ThemeData(
@@ -36,6 +35,7 @@ class MyApp extends StatelessWidget {
           '/inbox': (context) => const InboxScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/payment': (context) => const PaymentPage(),
+          '/addnewproperty': (context) => const AddNewPropertyScreen(),
         },
       ),
     );
@@ -48,6 +48,8 @@ class AuthenticationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    return authProvider.isAuthenticated ? const HomeScreen() : const WelcomeScreen();
+    return authProvider.isAuthenticated
+        ? const HomeScreen()
+        : const WelcomeScreen();
   }
 }

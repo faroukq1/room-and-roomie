@@ -14,7 +14,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _currentIndex = 3; // Set to 3 for Profile
+  int _currentIndex = 3;
   String? _name;
   String? _email;
   String? _avatarUrl;

@@ -203,13 +203,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
+        print('API Response: $responseData'); // Debug print
+
         // Extract properties from logements array
         final List<dynamic> properties = responseData['logements'] ?? [];
+
         // Extract pagination info
         final Map<String, dynamic> pagination = responseData['pagination'];
         final bool hasNextPage = pagination['hasNextPage'] ?? false;
         final int totalPages = pagination['totalPages'] ?? 1;
         final int currentPage = pagination['currentPage'] ?? 1;
+
+        print('Properties length: ${properties.length}'); // Debug print
+        print('Has next page: $hasNextPage'); // Debug print
+        print('Total pages: $totalPages'); // Debug print
+        print('Current page: $currentPage'); // Debug print
+
         final newProperties =
             properties
                 .map(
@@ -257,6 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
+      print('Error details: $e'); // Debug print
       setState(() {
         _errorMessage = 'Error fetching properties: $e';
         _isLoading = false;
@@ -290,6 +300,9 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
+      print('Fetching colocs for page: $_currentColocsPage'); // Debug print
+      print('Using token: $token'); // Debug print
+
       final response = await http.get(
         Uri.parse(
           '$baseUrl/api/colocs?page=$_currentColocsPage&limit=$_colocsLimit',
@@ -299,20 +312,36 @@ class _HomeScreenState extends State<HomeScreen> {
           'Authorization': 'Bearer $token',
         },
       );
+
+      print('Response status code: ${response.statusCode}'); // Debug print
+      print('Response body: ${response.body}'); // Debug print
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
+        print('Parsed response data: $responseData'); // Debug print
+
         // Extract colocs data using the correct key 'colocataires'
         final List<dynamic> colocs = responseData['colocataires'] ?? [];
+        print('Extracted colocs: $colocs'); // Debug print
+
         // Extract pagination info
         final Map<String, dynamic> pagination = responseData['pagination'];
         final bool hasNextPage = pagination['hasNextPage'] ?? false;
         final int totalPages = pagination['totalPages'] ?? 1;
         final int currentPage = pagination['currentPage'] ?? 1;
+
+        print('Pagination info:'); // Debug print
+        print('hasNextPage: $hasNextPage'); // Debug print
+        print('totalPages: $totalPages'); // Debug print
+        print('currentPage: $currentPage'); // Debug print
+
         final List<ColocModel> newColocs =
             colocs.map<ColocModel>((item) {
               print('Processing coloc item: $item'); // Debug print
               return ColocModel.fromJson(item);
             }).toList();
+
+        print('Processed ${newColocs.length} colocs'); // Debug print
 
         setState(() {
           _colocs = newColocs;
@@ -322,6 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoadingMoreColocs = false;
         });
       } else {
+        print('Error response: ${response.body}'); // Debug print
         setState(() {
           _errorMessageColocs = 'Failed to load colocs: ${response.statusCode}';
           _isLoadingColocs = false;
@@ -329,6 +359,8 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e, stackTrace) {
+      print('Error fetching colocs: $e'); // Debug print
+      print('Stack trace: $stackTrace'); // Debug print
       setState(() {
         _errorMessageColocs = 'Error fetching colocs: $e';
         _isLoadingColocs = false;
@@ -390,6 +422,11 @@ class _HomeScreenState extends State<HomeScreen> {
       // Parse user data to get ID
       final userData = jsonDecode(userDataStr);
       final userId = userData['id'];
+
+      print(
+        'Making API call to add favorite - LogementId: $logementId, UserId: $userId',
+      );
+
       final response = await http.post(
         Uri.parse('$baseUrl/api/logements/favorites/add'),
         headers: {
@@ -398,6 +435,10 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         body: jsonEncode({'logementId': logementId, 'userId': userId}),
       );
+
+      print('API Response Status Code: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
           final propertyIndex = _properties.indexWhere(
@@ -420,6 +461,8 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e, stackTrace) {
+      print('Error in _toggleFavorite: $e');
+      print('Stack trace: $stackTrace');
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
