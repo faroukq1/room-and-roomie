@@ -111,47 +111,6 @@ router.get('/', async (req, res) => {
 
 // Get filtered logements
 router.get('/filter', async (req, res) => {
-
-// Get logement by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const logement = await Logement.getLogementById(req.params.id);
-    if (!logement) return res.status(404).json({ message: 'Logement not found' });
-    res.json(logement);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Update logement
-router.put('/:id', authenticateToken, async (req, res) => {
-  try {
-    const logement = await Logement.getLogementById(req.params.id);
-    if (!logement) return res.status(404).json({ message: 'Logement not found' });
-    if (logement.proprietaire_id !== req.userId) {
-      return res.status(403).json({ message: 'Not authorized to update this logement' });
-    }
-    const updatedLogement = await Logement.updateLogement(req.params.id, req.body);
-    res.json(updatedLogement);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Delete logement
-router.delete('/:id', authenticateToken, async (req, res) => {
-  try {
-    const logement = await Logement.getLogementById(req.params.id);
-    if (!logement) return res.status(404).json({ message: 'Logement not found' });
-    if (logement.proprietaire_id !== req.userId) {
-      return res.status(403).json({ message: 'Not authorized to delete this logement' });
-    }
-    await Logement.deleteLogement(req.params.id);
-    res.json({ message: 'Logement deleted' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
@@ -163,51 +122,50 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     let paramIndex = 1;
 
     // Add filters
-    if (req.query.ville) {
-      whereClause += ` AND l.ville ILIKE $${paramIndex}`;
-      params.push(`%${req.query.ville}%`);
-      paramIndex++;
-    }
-
-    if (req.query.type_logement) {
+    // Property type
+    if (req.query.propertyType) {
       whereClause += ` AND l.type_logement = $${paramIndex}`;
-      params.push(req.query.type_logement);
+      params.push(req.query.propertyType);
       paramIndex++;
     }
 
-    if (req.query.loyer_min) {
+    // Property sub-type
+    if (req.query.propertySubType) {
+      whereClause += ` AND l.type_logement = $${paramIndex}`;
+      params.push(req.query.propertySubType);
+      paramIndex++;
+    }
+
+    // Price range
+    if (req.query.priceMin) {
       whereClause += ` AND l.loyer >= $${paramIndex}`;
-      params.push(parseFloat(req.query.loyer_min));
+      params.push(parseFloat(req.query.priceMin));
       paramIndex++;
     }
 
-    if (req.query.loyer_max) {
+    if (req.query.priceMax) {
       whereClause += ` AND l.loyer <= $${paramIndex}`;
-      params.push(parseFloat(req.query.loyer_max));
+      params.push(parseFloat(req.query.priceMax));
       paramIndex++;
     }
 
-    if (req.query.superficie_min) {
-      whereClause += ` AND l.superficie >= $${paramIndex}`;
-      params.push(parseFloat(req.query.superficie_min));
-      paramIndex++;
-    }
-
-    if (req.query.superficie_max) {
-      whereClause += ` AND l.superficie <= $${paramIndex}`;
-      params.push(parseFloat(req.query.superficie_max));
-      paramIndex++;
-    }
-
-    if (req.query.nombre_pieces) {
+    // Number of bedrooms
+    if (req.query.bedrooms) {
       whereClause += ` AND l.nombre_pieces = $${paramIndex}`;
-      params.push(parseInt(req.query.nombre_pieces));
+      params.push(parseInt(req.query.bedrooms));
       paramIndex++;
     }
 
-    if (req.query.meuble) {
-      whereClause += ` AND l.meuble = $${paramIndex}`;
-      params.push(req.query.meuble === 'true');
+    // Area range
+    if (req.query.areaMin) {
+      whereClause += ` AND l.superficie >= $${paramIndex}`;
+      params.push(parseFloat(req.query.areaMin));
+      paramIndex++;
+    }
+
+    if (req.query.areaMax) {
+      whereClause += ` AND l.superficie <= $${paramIndex}`;
+      params.push(parseFloat(req.query.areaMax));
       paramIndex++;
     }
 
@@ -250,7 +208,36 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error filtering logements:', error);
-    res.status(500).json({ message: 'Error filtering logements', error: error.message });
+    res.status(500).json({ 
+      message: 'Error filtering logements', 
+      error: error.message 
+    });
+  }
+});
+
+// Get logement by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const logement = await Logement.getLogementById(req.params.id);
+    if (!logement) return res.status(404).json({ message: 'Logement not found' });
+    res.json(logement);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update logement
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const logement = await Logement.getLogementById(req.params.id);
+    if (!logement) return res.status(404).json({ message: 'Logement not found' });
+    if (logement.proprietaire_id !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized to update this logement' });
+    }
+    const updatedLogement = await Logement.updateLogement(req.params.id, req.body);
+    res.json(updatedLogement);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
