@@ -9,8 +9,8 @@ class PropertyPhoto {
   final bool estPrincipale;
 
   PropertyPhoto.fromJson(Map<String, dynamic> json)
-    : url = json['url'],
-      estPrincipale = json['est_principale'];
+    : url = json['url'] ?? '',
+      estPrincipale = json['est_principale'] ?? false;
 }
 
 class UserProperty {
@@ -37,32 +37,37 @@ class UserProperty {
   final int candidaturesEnAttente;
 
   UserProperty.fromJson(Map<String, dynamic> json)
-    : id = json['id'],
-      titre = json['titre'],
-      description = json['description'],
-      adresse = json['adresse'],
-      ville = json['ville'],
-      codePostal = json['code_postal'],
-      superficie = double.parse(json['superficie'].toString()),
-      nombrePieces = json['nombre_pieces'],
-      nombreColocMax = json['nombre_coloc_max'],
-      typeLogement = json['type_logement'],
-      loyer = double.parse(json['loyer'].toString()),
-      chargesIncluses = json['charges_incluses'],
-      meuble = json['meuble'],
-      disponibleAPartir = DateTime.parse(json['disponible_a_partir']),
-      dateCreation = DateTime.parse(json['date_creation']),
-      estActif = json['est_actif'],
-      capaciteMaxColocataires = json['capacite_max_colocataires'],
-      proprietaireId = json['proprietaire_id'],
+    : id = json['id'] ?? 0,
+      titre = json['titre'] ?? '',
+      description = json['description'] ?? '',
+      adresse = json['adresse'] ?? '',
+      ville = json['ville'] ?? '',
+      codePostal = json['code_postal'] ?? '',
+      superficie =
+          double.tryParse(json['superficie']?.toString() ?? '0') ?? 0.0,
+      nombrePieces = json['nombre_pieces'] ?? 0,
+      nombreColocMax = json['nombre_coloc_max'] ?? 0,
+      typeLogement = json['type_logement'] ?? '',
+      loyer = double.tryParse(json['loyer']?.toString() ?? '0') ?? 0.0,
+      chargesIncluses = json['charges_incluses'] ?? false,
+      meuble = json['meuble'] ?? false,
+      disponibleAPartir =
+          DateTime.tryParse(json['disponible_a_partir'] ?? '') ??
+          DateTime.now(),
+      dateCreation =
+          DateTime.tryParse(json['date_creation'] ?? '') ?? DateTime.now(),
+      estActif = json['est_actif'] ?? false,
+      capaciteMaxColocataires = json['capacite_max_colocataires'] ?? 0,
+      proprietaireId = json['proprietaire_id'] ?? 0,
       photos =
-          (json['photos'] as List<dynamic>)
-              .map((photo) => PropertyPhoto.fromJson(photo))
-              .toList(),
-      nombreFavoris = int.parse(json['nombre_favoris'].toString()),
-      candidaturesEnAttente = int.parse(
-        json['candidatures_en_attente'].toString(),
-      );
+          (json['photos'] as List<dynamic>?)
+              ?.map((photo) => PropertyPhoto.fromJson(photo))
+              .toList() ??
+          [],
+      nombreFavoris =
+          int.tryParse(json['nombre_favoris']?.toString() ?? '0') ?? 0,
+      candidaturesEnAttente =
+          int.tryParse(json['candidatures_en_attente']?.toString() ?? '0') ?? 0;
 }
 
 class UserPropertiesScreen extends StatefulWidget {
@@ -74,7 +79,8 @@ class UserPropertiesScreen extends StatefulWidget {
 
 class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
   final storage = const FlutterSecureStorage();
-  final String baseUrl = 'http://10.0.2.2:3000';
+  final String baseUrl =
+      'http://192.168.1.x:3000'; // Replace with your server's IP
 
   List<UserProperty> _properties = [];
   bool _isLoading = true;
@@ -105,36 +111,55 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     }
 
     try {
-      final token = await storage.read(key: 'auth_token');
       final userData = await storage.read(key: 'user_data');
 
-      if (token == null || userData == null) {
+      if (userData == null) {
         setState(() {
           _errorMessage = 'Veuillez vous connecter pour voir vos propriétés';
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      Map<String, dynamic> user;
+      try {
+        user = jsonDecode(userData);
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'Erreur lors de la lecture des données utilisateur';
           _isLoading = false;
           _isLoadingMore = false;
         });
         return;
       }
 
-      final user = jsonDecode(userData);
       final userId = user['id'];
+      if (userId == null) {
+        setState(() {
+          _errorMessage = 'ID utilisateur manquant';
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+        return;
+      }
 
       final response = await http.get(
         Uri.parse(
           '$baseUrl/api/utilisateurs/$userId/logements?page=$_currentPage&limit=$_limit',
         ),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
         final List<dynamic> properties = responseData['logements'] ?? [];
-
-        final Map<String, dynamic> pagination = responseData['pagination'];
+        final Map<String, dynamic> pagination =
+            responseData['pagination'] ?? {};
         final bool hasNextPage = pagination['hasNextPage'] ?? false;
         final int currentPage = pagination['currentPage'] ?? 1;
 
@@ -152,14 +177,15 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = 'Erreur lors du chargement des propriétés';
+          _errorMessage =
+              'Erreur lors du chargement des propriétés: ${response.statusCode}';
           _isLoading = false;
           _isLoadingMore = false;
         });
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Erreur de connexion au serveur';
+        _errorMessage = 'Erreur de connexion au serveur: $e';
         _isLoading = false;
         _isLoadingMore = false;
       });
@@ -253,16 +279,18 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     };
 
     String mainPhotoUrl =
-        property.photos
-            .firstWhere(
-              (photo) => photo.estPrincipale,
-              orElse:
-                  () => PropertyPhoto.fromJson({
-                    'url': _getPlaceholderImage(property.id),
-                    'est_principale': true,
-                  }),
-            )
-            .url;
+        property.photos.isNotEmpty
+            ? property.photos
+                .firstWhere(
+                  (photo) => photo.estPrincipale,
+                  orElse:
+                      () => PropertyPhoto.fromJson({
+                        'url': _getPlaceholderImage(property.id),
+                        'est_principale': true,
+                      }),
+                )
+                .url
+            : _getPlaceholderImage(property.id);
 
     return GestureDetector(
       onTap: () {
