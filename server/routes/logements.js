@@ -294,9 +294,6 @@ router.put('/:id', async (req, res) => {
   try {
     const logement = await Logement.getLogementById(req.params.id);
     if (!logement) return res.status(404).json({ message: 'Logement not found' });
-    if (logement.proprietaire_id !== req.userId) {
-      return res.status(403).json({ message: 'Not authorized to update this logement' });
-    }
     const updatedLogement = await Logement.updateLogement(req.params.id, req.body);
     res.json(updatedLogement);
   } catch (error) {

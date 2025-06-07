@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'home_screen.dart';
+import 'edit_property_screen.dart';
 
 class PropertyPhoto {
   final String url;
@@ -253,64 +253,13 @@ class _UserPropertiesScreenState extends State<UserPropertiesScreen> {
     }
   }
 
-  Future<void> _editProperty(int propertyId) async {
-    print('Deleting property with ID: $propertyId');
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Confirmer la suppression'),
-            content: const Text(
-              'Êtes-vous sûr de vouloir supprimer cette propriété ?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'Supprimer',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
+  void _editProperty(int propertyId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPropertyScreen(propertyId: propertyId),
+      ),
     );
-
-    if (confirmed != true) return;
-
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/api/logements/$propertyId'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Propriété supprimée avec succès')),
-        );
-        // Refresh your property list after deletion
-        _fetchUserProperties();
-      } else if (response.statusCode == 404) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Propriété non trouvée')));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Erreur lors de la suppression : ${response.statusCode}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur de connexion au serveur : $e')),
-      );
-    }
   }
 
   void _addNewProperty() {
