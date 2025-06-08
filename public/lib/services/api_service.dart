@@ -1,24 +1,28 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../constants.dart';
 
 class ApiService {
   // Replace with your actual server address (use your computer's IP when testing)
-  final String baseUrl = 'http://10.0.2.2:5050/api';
   final storage = FlutterSecureStorage();
 
   // Register a new user
-  Future<Map<String, dynamic>> signup(String nomComplet, String email,
-      String motDePasse, String telephone) async {
+  Future<Map<String, dynamic>> signup(
+    String nomComplet,
+    String email,
+    String motDePasse,
+    String telephone,
+  ) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/signup'),
+        Uri.parse('$baseUrl/api/auth/signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nom_complet': nomComplet,
           'email': email,
           'mot_de_passe': motDePasse,
-          'telephone': telephone
+          'telephone': telephone,
         }),
       );
 
@@ -34,10 +38,7 @@ class ApiService {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'mot_de_passe': motDePasse,
-        }),
+        body: jsonEncode({'email': email, 'mot_de_passe': motDePasse}),
       );
 
       final data = jsonDecode(response.body);
