@@ -1,5 +1,8 @@
+import '../models/message.dart';
 import 'package:flutter/material.dart';
-import 'package:memo/models/message.dart'; // Update this to match your actual package name
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -11,36 +14,84 @@ class InboxScreen extends StatefulWidget {
 class _InboxScreenState extends State<InboxScreen> {
   int _currentIndex = 2; // Set to 2 for Inbox
 
-  final List<Message> _messages = [
-    Message(
-      'Ahmed',
-      'Bonjour, est-ce que l\'appartement est toujours disponible?',
-      DateTime.now().subtract(const Duration(minutes: 30)),
-      'https://images.unsplash.com/photo-1563370161-21ddef1051b4?crop=entropy&cs=tinysrgb&fit=max&ixid=MXwyMDg5MnwwfDF8c2VhcmNofDEwfHxwZW9wbGV8ZW58MHx8fHwxNjI0OTg0NjI2&ixlib=rb-1.2.1&q=80&w=400',
-      true,
-    ),
-    Message(
-      'Sarah',
-      'Je suis intéressé par la colocation. Pouvons-nous discuter des détails?',
-      DateTime.now().subtract(const Duration(hours: 2)),
-      'https://images.unsplash.com/photo-1583779400131-94a7413b3e3b?crop=entropy&cs=tinysrgb&fit=max&ixid=MXwyMDg5MnwwfDF8c2VhcmNofDJ8fHxwZW9wbGV8ZW58MHx8fHwxNjI0OTg1NjA1&ixlib=rb-1.2.1&q=80&w=400',
-      false,
-    ),
-    Message(
-      'Karim',
-      'À quelle distance est le logement du centre-ville?',
-      DateTime.now().subtract(const Duration(days: 1)),
-      'https://images.unsplash.com/photo-1600732000364-712227e08cb6?crop=entropy&cs=tinysrgb&fit=max&ixid=MXwyMDg5MnwwfDF8c2VhcmNofDMxfHxwZW9wbGV8ZW58MHx8fHwxNjI0OTg1NTkw&ixlib=rb-1.2.1&q=80&w=400',
-      false,
-    ),
-    Message(
-      'Amina',
-      'Bonjour, l\'appartement a l\'air très bien. Est-ce qu\'il y a un parking disponible?',
-      DateTime.now().subtract(const Duration(days: 2)),
-      'https://images.unsplash.com/photo-1521747116042-b2d073d47d62?crop=entropy&cs=tinysrgb&fit=max&ixid=MXwyMDg5MnwwfDF8c2VhcmNofDR8fHxwZW9wbGV8ZW58MHx8fHwxNjI0OTg2MTA3&ixlib=rb-1.2.1&q=80&w=400',
-      true,
-    ),
-  ];
+  List<Message> _messages = [];
+  bool _isLoading = true;
+  int? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchConversations();
+  }
+
+  Future<void> _fetchConversations() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final storage = const FlutterSecureStorage();
+      final userDataStr = await storage.read(key: 'user_data');
+      if (userDataStr == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        print('No user data found in secure storage.');
+        return;
+      }
+      final userData = jsonDecode(userDataStr);
+      _currentUserId = userData['id'];
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:4000/api/conversations/$_currentUserId'),
+      );
+      print('Conversations response: ${response.statusCode} ${response.body}');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        List<Message> messages = [];
+        for (var convo in data) {
+          final otherUserId =
+              convo['expediteur_id'] == _currentUserId
+                  ? convo['destinataire_id']
+                  : convo['expediteur_id'];
+          final userResp = await http.get(
+            Uri.parse('http://10.0.2.2:3000/api/utilisateurs/$otherUserId'),
+          );
+          print('User response: ${userResp.statusCode} ${userResp.body}');
+          String senderName = 'Utilisateur';
+          String avatarUrl = '';
+          if (userResp.statusCode == 200) {
+            final user = jsonDecode(userResp.body);
+            senderName = (user['prenom'] ?? '') + ' ' + (user['nom'] ?? '');
+            avatarUrl = user['photo_profil'] ?? '';
+          }
+          messages.add(
+            Message(
+              senderName,
+              convo['contenu'] ?? '',
+              DateTime.tryParse(convo['date_envoi'] ?? '') ?? DateTime.now(),
+              avatarUrl,
+              !(convo['lu'] ?? true) &&
+                  convo['destinataire_id'] == _currentUserId,
+            )..otherUserId = otherUserId,
+          );
+        }
+        setState(() {
+          _messages = messages;
+          _isLoading = false;
+        });
+      } else {
+        print('Failed to fetch conversations: ${response.statusCode}');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e, stack) {
+      print('Error in _fetchConversations: $e');
+      print(stack);
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +107,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 children: [
                   const Text(
                     'Messages',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   IconButton(
@@ -86,14 +134,19 @@ class _InboxScreenState extends State<InboxScreen> {
 
             // Message list
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final message = _messages[index];
-                  return _buildMessageItem(message);
-                },
-              ),
+              child:
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _messages.isEmpty
+                      ? const Center(child: Text('Aucune conversation'))
+                      : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final message = _messages[index];
+                          return _buildMessageItem(message);
+                        },
+                      ),
             ),
 
             // Bottom Navigation Bar
@@ -169,18 +222,12 @@ class _InboxScreenState extends State<InboxScreen> {
           children: [
             Text(
               message.senderName,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const Spacer(),
             Text(
               _formatTime(message.time),
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -192,7 +239,8 @@ class _InboxScreenState extends State<InboxScreen> {
               message.text,
               style: TextStyle(
                 color: message.unread ? Colors.black : Colors.grey[600],
-                fontWeight: message.unread ? FontWeight.w500 : FontWeight.normal,
+                fontWeight:
+                    message.unread ? FontWeight.w500 : FontWeight.normal,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -200,18 +248,29 @@ class _InboxScreenState extends State<InboxScreen> {
           ],
         ),
         // If unread, show indicator
-        trailing: message.unread
-            ? Container(
-          width: 10,
-          height: 10,
-          decoration: const BoxDecoration(
-            color: Colors.blue,
-            shape: BoxShape.circle,
-          ),
-        )
-            : null,
+        trailing:
+            message.unread
+                ? Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                )
+                : null,
         onTap: () {
-          // Navigate to message detail
+          // Navigate to ChatScreen with current user and other user ID
+          Navigator.pushNamed(
+            context,
+            '/chat',
+            arguments: {
+              'currentUserId': _currentUserId,
+              'otherUserId': (message as dynamic).otherUserId,
+              'otherUserName': message.senderName,
+              'avatarUrl': message.avatarUrl,
+            },
+          );
         },
       ),
     );
@@ -220,7 +279,9 @@ class _InboxScreenState extends State<InboxScreen> {
   String _formatTime(DateTime time) {
     final now = DateTime.now();
 
-    if (time.day == now.day && time.month == now.month && time.year == now.year) {
+    if (time.day == now.day &&
+        time.month == now.month &&
+        time.year == now.year) {
       return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
     } else if (time.isAfter(now.subtract(const Duration(days: 7)))) {
       return _getWeekday(time);
@@ -255,10 +316,7 @@ class _InboxScreenState extends State<InboxScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.black : Colors.grey,
-          ),
+          Icon(icon, color: isSelected ? Colors.black : Colors.grey),
           const SizedBox(height: 2),
           Text(
             label,

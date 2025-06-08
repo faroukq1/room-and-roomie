@@ -19,6 +19,31 @@ const io = new Server(server, {
 });
 
 
+// Get all conversations for a user (latest message per user pair)
+app.get('/api/conversations/:userId', async (req, res) => {
+  const userId = parseInt(req.params.userId, 10);
+  try {
+    const result = await pool.query(`
+      SELECT DISTINCT ON (
+        LEAST(expediteur_id, destinataire_id), 
+        GREATEST(expediteur_id, destinataire_id)
+      )
+        id, contenu, expediteur_id, destinataire_id, date_envoi, lu
+      FROM messages
+      WHERE expediteur_id = $1 OR destinataire_id = $1
+      ORDER BY 
+        LEAST(expediteur_id, destinataire_id), 
+        GREATEST(expediteur_id, destinataire_id), 
+        date_envoi DESC
+    `, [userId]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('DB error fetching conversations:', err);
+    res.status(500).json({ error: 'Failed to fetch conversations' });
+  }
+});
+
 // Socket.IO event handlers
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);

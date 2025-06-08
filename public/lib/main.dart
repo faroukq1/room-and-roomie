@@ -9,6 +9,7 @@ import 'screens/inbox_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/paymentpage.dart';
 import 'screens/AddNewProperty.dart';
+import 'screens/ChatScreen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,6 +37,14 @@ class MyApp extends StatelessWidget {
           '/inbox': (context) => const InboxScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/addnewproperty': (context) => const AddNewPropertyScreen(),
+          '/chat':
+              (context) => const ChatScreen(
+                currentUserId:
+                    0, // Placeholder, should be replaced on navigation
+                otherUserId: 0, // Placeholder, should be replaced on navigation
+                otherUserName:
+                    '', // Placeholder, should be replaced on navigation
+              ),
         },
       ),
     );

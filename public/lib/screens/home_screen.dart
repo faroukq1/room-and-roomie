@@ -1502,8 +1502,54 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                           onPressed:
                               _isOwner
                                   ? null
-                                  : () {
-                                    // Place your contact logic here (e.g., open chat, send request, etc.)
+                                  : () async {
+                                    final storage =
+                                        const FlutterSecureStorage();
+                                    final userDataStr = await storage.read(
+                                      key: 'user_data',
+                                    );
+                                    int? currentUserId;
+                                    if (userDataStr != null) {
+                                      final userData = jsonDecode(userDataStr);
+                                      currentUserId = userData['id'];
+                                    }
+                                    if (currentUserId == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Vous devez être connecté pour discuter.',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                    final owner =
+                                        widget.property['proprietaire'];
+                                    if (owner == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Aucun propriétaire trouvé pour cette propriété.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/chat',
+                                      arguments: {
+                                        'currentUserId': currentUserId,
+                                        'otherUserId': owner['id'],
+                                        'otherUserName':
+                                            (owner['prenom'] ?? '') +
+                                            ' ' +
+                                            (owner['nom'] ?? ''),
+                                      },
+                                    );
                                   },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
