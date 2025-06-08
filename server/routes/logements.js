@@ -4,7 +4,72 @@ const router = express.Router();
 const Logement = require('../models/Logement');
 const jwt = require('jsonwebtoken');
 const pool = require('../config');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
+// Ensure downloads directory exists
+const downloadsPath = path.join(__dirname, '..', 'downloads');
+if (!fs.existsSync(downloadsPath)) {
+  fs.mkdirSync(downloadsPath, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, downloadsPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { files: 10 },
+  fileFilter: (req, file, cb) => {
+    // Accept any image type by mimetype or extension
+    const allowedExt = [
+      '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tiff', '.ico', '.jfif', '.pjpeg', '.pjp', '.avif', '.apng'
+    ];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (
+      (file.mimetype && file.mimetype.startsWith('image/')) ||
+      allowedExt.includes(ext)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Seules les images sont autorisées (jpeg, png, gif, webp, bmp, svg, tiff, ico, etc.)'));
+    }
+  },
+});
+
+// POST /api/logements/:logementId/upload-pictures
+router.post('/:logementId/upload-pictures', upload.array('pictures', 10), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'Aucune image téléchargée.' });
+  }
+  const logementId = req.params.logementId;
+  try {
+    // Save image URLs to DB (table photos_logement)
+    const urls = req.files.map(file => {
+      return req.protocol + '://' + req.get('host') + '/downloads/' + file.filename;
+    });
+    // Optionally: Insert into DB
+    for (const file of req.files) {
+      await pool.query(
+        'INSERT INTO photos_logement (url, logement_id) VALUES ($1, $2)',
+        ['/downloads/' + file.filename, logementId]
+      );
+    }
+    res.json({
+      message: 'Images téléchargées avec succès',
+      urls
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'upload des images du logement:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'upload des images du logement' });
+  }
+});
 
 // Create a logement
 router.post('/create', async (req, res) => {
@@ -131,9 +196,15 @@ router.get('/', async (req, res) => {
     `;
 
     const result = await pool.query(query, [limit, offset]);
-    
+    // Fetch images for each logement
+    const logementsWithImages = await Promise.all(
+      result.rows.map(async (logement) => {
+        const images = await Logement.getImagesByLogementId(logement.id);
+        return { ...logement, images };
+      })
+    );
     res.json({
-      logements: result.rows,
+      logements: logementsWithImages,
       pagination: {
         currentPage: page,
         itemsPerPage: limit,

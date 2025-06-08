@@ -3,6 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../constants.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class AddNewPropertyScreen extends StatefulWidget {
   const AddNewPropertyScreen({super.key});
@@ -31,6 +33,23 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
   bool _meuble = false;
 
   bool _isSubmitting = false;
+  List<XFile> _selectedImages = [];
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImages() async {
+    final List<XFile>? images = await _picker.pickMultiImage(imageQuality: 80);
+    if (images != null && images.length <= 10) {
+      setState(() {
+        _selectedImages = images;
+      });
+    } else if (images != null && images.length > 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vous pouvez sélectionner jusqu’à 10 images maximum.'),
+        ),
+      );
+    }
+  }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
@@ -114,6 +133,43 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
       setState(() => _isSubmitting = false);
 
       if (response.statusCode == 201) {
+        final logementData = jsonDecode(response.body);
+        final logementId =
+            logementData['id'] ?? logementData['logement']?['id'];
+        // Upload images if any
+        if (logementId != null && _selectedImages.isNotEmpty) {
+          try {
+            var uploadUrl = Uri.parse(
+              '$baseUrl/api/logements/$logementId/upload-pictures',
+            );
+            var request = http.MultipartRequest('POST', uploadUrl);
+            for (var img in _selectedImages) {
+              request.files.add(
+                await http.MultipartFile.fromPath('pictures', img.path),
+              );
+            }
+            var uploadResp = await request.send();
+            if (uploadResp.statusCode == 200) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Images téléchargées avec succès'),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Erreur lors de l’upload des images: ${uploadResp.statusCode}',
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erreur lors de l’upload des images: $e')),
+            );
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Propriété ajoutée avec succès')),
         );
@@ -144,6 +200,81 @@ class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              // Image picker area at top
+              GestureDetector(
+                onTap: _isSubmitting ? null : _pickImages,
+                child: Container(
+                  width: double.infinity,
+                  height: MediaQuery.of(context).size.height * 0.20,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade400),
+                  ),
+                  child:
+                      _selectedImages.isEmpty
+                          ? Center(
+                            child: Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 60,
+                              color: Colors.grey[500],
+                            ),
+                          )
+                          : Stack(
+                            children: [
+                              ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _selectedImages.length,
+                                itemBuilder: (context, idx) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        File(_selectedImages[idx].path),
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                            0.35,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              Positioned(
+                                right: 10,
+                                bottom: 10,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.photo_library,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${_selectedImages.length}/10',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Titre'),

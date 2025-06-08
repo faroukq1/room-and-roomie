@@ -15,17 +15,43 @@ class PropertyDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                property['images'][0],
-                fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) => Container(
-                      color: Colors.grey[300],
-                      child: const Center(child: Text('Image non disponible')),
-                    ),
-              ),
+            SizedBox(
+              height: 220,
+              child:
+                  (property['images'] != null && property['images'].isNotEmpty)
+                      ? ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: property['images'].length,
+                        separatorBuilder:
+                            (context, index) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final imgUrl = property['images'][index];
+                          return AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.network(
+                              imgUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                    color: Colors.grey[300],
+                                    width: 200,
+                                    child: const Center(
+                                      child: Text('Image non disponible'),
+                                    ),
+                                  ),
+                            ),
+                          );
+                        },
+                      )
+                      : AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Text('Aucune image disponible'),
+                          ),
+                        ),
+                      ),
             ),
             Padding(
               padding: const EdgeInsets.all(16),

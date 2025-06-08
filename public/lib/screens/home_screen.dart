@@ -79,8 +79,6 @@ class ColocModel {
         colocationId: json['colocation_id'] ?? 0,
       );
     } catch (e, stackTrace) {
-      print('Error creating ColocModel: $e'); // Debug print
-      print('Stack trace: $stackTrace'); // Debug print
       rethrow;
     }
   }
@@ -196,7 +194,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     'type': item['type_logement'].toString().capitalize(),
                     'bedrooms': item['nombre_pieces'].toString(),
                     'area': double.parse(item['superficie'].toString()),
-                    'images': [_imageUrls[item['id'] % _imageUrls.length]],
+                    'images':
+                        (item['images'] != null && item['images'].isNotEmpty)
+                            ? (item['images'] as List).map<String>((img) {
+                              final imgStr = img.toString();
+                              if (imgStr.startsWith('http')) return imgStr;
+                              String cleanBase = baseUrl;
+                              if (cleanBase.endsWith('/'))
+                                cleanBase = cleanBase.substring(
+                                  0,
+                                  cleanBase.length - 1,
+                                );
+                              String cleanImg = imgStr;
+                              while (cleanImg.startsWith('/')) {
+                                cleanImg = cleanImg.substring(1);
+                              }
+                              return '$cleanBase/$cleanImg';
+                            }).toList()
+                            : [_imageUrls[item['id'] % _imageUrls.length]],
                     'description': item['description'],
                     'disponible_a_partir': item['disponible_a_partir'],
                     'est_actif': item['est_actif'],
@@ -633,7 +648,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         top: Radius.circular(12),
                       ),
                       child: Image.network(
-                        property['images'][0],
+                        (property['images'] != null &&
+                                property['images'].isNotEmpty &&
+                                property['images'][0] != null &&
+                                property['images'][0].toString().isNotEmpty)
+                            ? property['images'][0]
+                            : 'https://via.placeholder.com/400x225?text=Aucune+image',
                         fit: BoxFit.cover,
                         errorBuilder:
                             (context, error, stackTrace) => Container(
@@ -1307,7 +1327,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       setState(() => _isApplying = false);
       return;
     }
-    final url = Uri.parse('http://10.0.2.2:3000/api/colocs/candidature');
+    final url = Uri.parse('$baseUrl/api/colocs/candidature');
     try {
       final response = await http.post(
         url,
@@ -1382,20 +1402,44 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                (widget.property['images'] != null &&
-                        widget.property['images'].isNotEmpty)
-                    ? widget.property['images'][0]
-                    : 'https://via.placeholder.com/400',
-                fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) => Container(
-                      color: Colors.grey[300],
-                      child: const Center(child: Text('Image non disponible')),
-                    ),
-              ),
+            SizedBox(
+              height: 220,
+              child:
+                  (widget.property['images'] != null &&
+                          widget.property['images'].isNotEmpty)
+                      ? ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: widget.property['images'].length,
+                        separatorBuilder:
+                            (context, index) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final imgUrl = widget.property['images'][index];
+                          return AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.network(
+                              imgUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                    color: Colors.grey[300],
+                                    width: 200,
+                                    child: const Center(
+                                      child: Text('Image non disponible'),
+                                    ),
+                                  ),
+                            ),
+                          );
+                        },
+                      )
+                      : AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Text('Aucune image disponible'),
+                          ),
+                        ),
+                      ),
             ),
             Padding(
               padding: const EdgeInsets.all(16),

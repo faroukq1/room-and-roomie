@@ -2,6 +2,20 @@
 const pool = require("../config");
 
 class Logement {
+  // Get all images for a logement
+  static async getImagesByLogementId(logementId) {
+    try {
+      const result = await pool.query(
+        'SELECT url FROM photos_logement WHERE logement_id = $1',
+        [logementId]
+      );
+      // Return array of URLs (as strings)
+      return result.rows.map(row => row.url);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des images du logement:', error);
+      return [];
+    }
+  }
   // Create a new logement (property)
   static async createLogement({
     proprietaire_id,
