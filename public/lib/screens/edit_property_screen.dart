@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../constants.dart';
 
 class EditPropertyScreen extends StatefulWidget {
   final int propertyId;
-  final String baseUrl = 'http://10.0.2.2:3000';
   const EditPropertyScreen({Key? key, required this.propertyId})
     : super(key: key);
 
@@ -47,7 +47,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   }
 
   void _fetchProperty() async {
-    final url = '${widget.baseUrl}/api/logements/${widget.propertyId}';
+    final url = '${baseUrl}/api/logements/${widget.propertyId}';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -91,7 +91,7 @@ class _EditPropertyScreenState extends State<EditPropertyScreen> {
   }
 
   void _submit() async {
-    final url = '${widget.baseUrl}/api/logements/${widget.propertyId}';
+    final url = '${baseUrl}/api/logements/${widget.propertyId}';
     final storage = const FlutterSecureStorage();
     final userDataStr = await storage.read(key: 'user_data');
     int? userId;

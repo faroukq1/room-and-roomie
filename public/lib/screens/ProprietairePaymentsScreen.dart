@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../constants.dart';
 
 class ProprietairePaymentsScreen extends StatefulWidget {
   const ProprietairePaymentsScreen({super.key});
 
   @override
-  State<ProprietairePaymentsScreen> createState() => _ProprietairePaymentsScreenState();
+  State<ProprietairePaymentsScreen> createState() =>
+      _ProprietairePaymentsScreenState();
 }
 
-class _ProprietairePaymentsScreenState extends State<ProprietairePaymentsScreen> {
+class _ProprietairePaymentsScreenState
+    extends State<ProprietairePaymentsScreen> {
   List<dynamic> payments = [];
   bool loading = true;
 
@@ -36,7 +39,9 @@ class _ProprietairePaymentsScreenState extends State<ProprietairePaymentsScreen>
       });
       return;
     }
-    final url = Uri.parse('http://10.0.2.2:3000/api/paiements/proprietaire/$proprietaireId');
+    final url = Uri.parse(
+      '$baseUrl/api/paiements/proprietaire/$proprietaireId',
+    );
     final response = await http.get(url);
     if (response.statusCode == 200) {
       setState(() {
@@ -57,20 +62,23 @@ class _ProprietairePaymentsScreenState extends State<ProprietairePaymentsScreen>
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Paiements reçus')),
-      body: payments.isEmpty
-          ? const Center(child: Text('Aucun paiement trouvé.'))
-          : ListView.builder(
-              itemCount: payments.length,
-              itemBuilder: (context, index) {
-                final p = payments[index];
-                return ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text('${p['prenom'] ?? ''} ${p['nom'] ?? ''}'),
-                  subtitle: Text('Email: ${p['email'] ?? ''}\nLogement: ${p['titre'] ?? ''}'),
-                  trailing: Text('${p['montant']} DA'),
-                );
-              },
-            ),
+      body:
+          payments.isEmpty
+              ? const Center(child: Text('Aucun paiement trouvé.'))
+              : ListView.builder(
+                itemCount: payments.length,
+                itemBuilder: (context, index) {
+                  final p = payments[index];
+                  return ListTile(
+                    leading: const Icon(Icons.person),
+                    title: Text('${p['prenom'] ?? ''} ${p['nom'] ?? ''}'),
+                    subtitle: Text(
+                      'Email: ${p['email'] ?? ''}\nLogement: ${p['titre'] ?? ''}',
+                    ),
+                    trailing: Text('${p['montant']} DA'),
+                  );
+                },
+              ),
     );
   }
 }

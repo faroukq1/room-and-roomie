@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../constants.dart';
 
 class PaymentPage extends StatefulWidget {
   final String title;
@@ -211,7 +211,6 @@ class _PaymentPageState extends State<PaymentPage> {
                         final moyenPaiement =
                             _selectedMethod; // e.g. 'paypal', 'credit_card', etc.
                         final logementId = widget.logementId;
-                        const baseUrl = 'http://10.0.2.2:3000';
                         final url = Uri.parse('$baseUrl/api/paiements');
                         final paymentData = {
                           'montant': montant,

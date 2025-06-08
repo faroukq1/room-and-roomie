@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'privacy_policy_screen.dart';
 import 'settings_screen.dart';
 import 'ProprietaireDashboard.dart';
+import '../constants.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,7 +23,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int? _favorites;
   String _storageData = 'Loading...';
   final storage = FlutterSecureStorage();
-  final String baseUrl = 'http://10.0.2.2:3000/api';
 
   @override
   void initState() {
@@ -48,44 +48,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
         userId = userData?['id'] ?? 0;
       }
 
-      Map<String, dynamic>? stats;
+      int propertiesCount = 0;
+      int favoritesCount = 0;
+      String? name;
+      String? email;
+      String? avatarUrl;
+
       if (token != null && userId != 0) {
-        final response = await http.get(
-          Uri.parse('$baseUrl/stats/$userId'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        );
-        if (response.statusCode == 200) {
-          stats = jsonDecode(response.body);
-        } else {
-          buffer.writeln(
-            'Failed to fetch stats: ${response.statusCode} ${response.body}',
+        try {
+          // Fetch properties count
+          final propertiesResponse = await http.get(
+            Uri.parse('$baseUrl/api/utilisateurs/$userId/logements'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
           );
+          if (propertiesResponse.statusCode == 200) {
+            final propertiesData = jsonDecode(propertiesResponse.body);
+            final List<dynamic> properties = propertiesData['logements'] ?? [];
+            propertiesCount = properties.length;
+          }
+
+          // Fetch favorites count
+          final favoritesResponse = await http.get(
+            Uri.parse('$baseUrl/api/logements/favorites/$userId'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          );
+          if (favoritesResponse.statusCode == 200) {
+            final favoritesData = jsonDecode(favoritesResponse.body);
+            if (favoritesData is List) {
+              favoritesCount = favoritesData.length;
+            }
+          }
+        } catch (e) {
+          // If either API fails, leave counts as 0
+        }
+
+        // Use userData for name/email/avatar
+        if (userData != null) {
+          name = userData['nom'] ?? 'Unknown User';
+          email = userData['email'] ?? 'No email';
+          avatarUrl = userData['avatar_url'];
         }
       }
 
       setState(() {
-        if (stats != null) {
-          _name = stats['name'] ?? 'Unknown User';
-          _email = stats['email'] ?? 'No email';
-          _avatarUrl = stats['avatar_url'];
-          _properties = stats['properties'] ?? 0;
-          _favorites = stats['favorites'] ?? 0;
-        } else if (userData != null) {
-          _name = userData['nom'] ?? 'Unknown User';
-          _email = userData['email'] ?? 'No email';
-          _avatarUrl = null;
-          _properties = 0;
-          _favorites = 0;
-        } else {
-          _name = 'Unknown User';
-          _email = 'No email';
-          _avatarUrl = null;
-          _properties = 0;
-          _favorites = 0;
-        }
+        _name = name ?? userData?['nom'] ?? 'Unknown User';
+        _email = email ?? userData?['email'] ?? 'No email';
+        _avatarUrl = avatarUrl ?? userData?['avatar_url'];
+        _properties = propertiesCount;
+        _favorites = favoritesCount;
         _storageData =
             buffer.isEmpty ? 'No data in storage' : buffer.toString();
       });

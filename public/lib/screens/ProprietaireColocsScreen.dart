@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../constants.dart';
 
 class ProprietaireColocsScreen extends StatefulWidget {
   const ProprietaireColocsScreen({super.key});
@@ -64,7 +65,7 @@ class _ProprietaireColocsScreenState extends State<ProprietaireColocsScreen> {
       loading = true;
     });
     final url = Uri.parse(
-      'http://10.0.2.2:3000/api/colocs/candidature/$candidatureId/action',
+      '$baseUrl/api/colocs/candidature/$candidatureId/action',
     );
     try {
       final response = await http.post(

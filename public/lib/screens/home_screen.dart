@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'paymentpage.dart';
 import 'widgets/apply_coloc_dialog.dart';
+import '../constants.dart';
 
 // Coloc Model
 class ColocModel {
@@ -93,7 +94,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String baseUrl = "http://10.0.2.2:3000";
   final storage = const FlutterSecureStorage();
   int _currentIndex = 0;
   bool _showLogs = true;

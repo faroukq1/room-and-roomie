@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
@@ -29,10 +28,7 @@ class WelcomeScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     const Text(
                       'Trouvez votre logement idéal',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 20, color: Colors.grey),
                     ),
                     const SizedBox(height: 40),
                   ],

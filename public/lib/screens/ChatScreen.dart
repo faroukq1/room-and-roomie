@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import '../constants.dart';
 
 class ChatScreen extends StatefulWidget {
   final int? currentUserId;
@@ -39,7 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _initSocket() {
     if (socket != null || userId == null || ownerId == null) return;
     socket = IO.io(
-      'http://10.0.2.2:4000', // Change to your server IP if on device
+      socketUrl,
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()

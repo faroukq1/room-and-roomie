@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../constants.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -41,9 +42,8 @@ class _InboxScreenState extends State<InboxScreen> {
       final userData = jsonDecode(userDataStr);
       _currentUserId = userData['id'];
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:4000/api/conversations/$_currentUserId'),
+        Uri.parse('$socketUrl/api/conversations/$_currentUserId'),
       );
-      print('Conversations response: ${response.statusCode} ${response.body}');
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         List<Message> messages = [];
@@ -53,7 +53,7 @@ class _InboxScreenState extends State<InboxScreen> {
                   ? convo['destinataire_id']
                   : convo['expediteur_id'];
           final userResp = await http.get(
-            Uri.parse('http://10.0.2.2:3000/api/utilisateurs/$otherUserId'),
+            Uri.parse('$baseUrl/api/utilisateurs/$otherUserId'),
           );
           print('User response: ${userResp.statusCode} ${userResp.body}');
           String senderName = 'Utilisateur';

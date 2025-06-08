@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../constants.dart';
 
 class AddNewPropertyScreen extends StatefulWidget {
   const AddNewPropertyScreen({super.key});
@@ -13,9 +14,6 @@ class AddNewPropertyScreen extends StatefulWidget {
 class _AddNewPropertyScreenState extends State<AddNewPropertyScreen> {
   final _formKey = GlobalKey<FormState>();
   final _storage = const FlutterSecureStorage();
-  final String baseUrl =
-      'http://10.0.2.2:3000'; // Replace with your server's IP (e.g., 192.168.1.100 or 10.0.2.2 for emulator)
-
   // Controllers
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();

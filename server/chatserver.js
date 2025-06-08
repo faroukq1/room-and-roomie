@@ -5,7 +5,6 @@ const { Server } = require('socket.io');
 const pool = require('./config');
 const cors = require('cors');
 
-// Environment/config vars (customize as needed)
 const PORT = process.env.CHAT_PORT || 4000;
 
 const app = express();

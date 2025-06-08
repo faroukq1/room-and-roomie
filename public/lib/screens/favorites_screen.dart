@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'home_screen.dart';
+import '../constants.dart';
 
 class FavoriteProperty {
   final int id;
@@ -101,7 +102,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       final userId = user['id'];
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:3000/api/logements/favorites/$userId'),
+        Uri.parse('$baseUrl/api/logements/favorites/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -145,7 +146,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       }
 
       final response = await http.delete(
-        Uri.parse('http://10.0.2.2:3000/api/logements/favorites/$propertyId'),
+        Uri.parse('$baseUrl/logements/favorites/$propertyId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -169,7 +170,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         );
       }
     } catch (e) {
-      print('Error removing favorite: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erreur lors de la suppression du favori'),

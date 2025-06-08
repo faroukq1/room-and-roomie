@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../constants.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -36,9 +37,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.dispose();
   }
 
-  // API URL - Update with your actual server address
-  final String baseUrl = 'http://10.0.2.2:3000/api'; // For Android emulator
-
   // Login function
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -50,7 +48,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse('$baseUrl/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text.trim(),
@@ -59,7 +57,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       );
 
       final data = jsonDecode(response.body);
-      print(data);
       if (response.statusCode == 200 && data['token'] != null) {
         // Store token and user data
         await storage.write(key: 'auth_token', value: data['token']);
