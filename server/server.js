@@ -25,6 +25,10 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/logements", logementRoutes);
 app.use("/api/colocs", colocsRoutes);
 app.use("/api/paiements", paymentRoutes);
+
+// ➕ Serve downloads folder statically
+const path = require('path');
+app.use('/downloads', express.static(path.join(__dirname, 'downloads')));
 // Middleware de gestion des erreurs globales
 app.use((err, req, res, next) => {
     console.error("❌ Erreur serveur :", err.message);

@@ -1,8 +1,9 @@
 const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const os = require("os");
 const router = express.Router();
 const User = require("../models/User");
-const authMiddleware = require("../middleware/Auth");
-const authorizeMiddleware = require("../middleware/authorize");
 const pool = require("../config");
 
 // ➕ Voir profil
@@ -84,6 +85,71 @@ router.get("/:id/logements", async (req, res) => {
 });
 
 // 🔁 Modifier le profil
+// 📤 Upload picture to Downloads folder
+const downloadsPath = path.join(__dirname, '..', 'downloads');
+const fs = require('fs');
+// Ensure the downloads directory exists
+if (!fs.existsSync(downloadsPath)) {
+  fs.mkdirSync(downloadsPath, { recursive: true });
+}
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, downloadsPath);
+  },
+  filename: function (req, file, cb) {
+    // Save with original name; optionally add timestamp for uniqueness
+    cb(null, Date.now() + '-' + file.originalname);
+  },
+});
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    // Accept any image type by mimetype or extension
+    const allowedExt = [
+      '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tiff', '.ico', '.jfif', '.pjpeg', '.pjp', '.avif', '.apng'
+    ];
+    const ext = require('path').extname(file.originalname).toLowerCase();
+    if (
+      (file.mimetype && file.mimetype.startsWith('image/')) ||
+      allowedExt.includes(ext)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Seules les images sont autorisées (jpeg, png, gif, webp, bmp, svg, tiff, ico, etc.)'));
+    }
+  },
+});
+
+// POST /api/user/upload-picture/:userId
+router.post("/upload-picture/:userId", upload.single("picture"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  try {
+    // Get user id from route params
+    const userId = req.params.userId;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required in URL params" });
+    }
+    // Insert into photos_utilisateur
+    const insertQuery = `INSERT INTO photos_utilisateur (url, utilisateur_id, est_principale) VALUES ($1, $2, $3) RETURNING *`;
+    const values = [req.file.path, userId, false];
+    const result = await pool.query(insertQuery, values);
+    // Build public URL for the uploaded file
+    const publicUrl = `${req.protocol}://${req.get('host')}/downloads/${req.file.filename}`;
+    res.json({
+      message: "File uploaded and saved to DB successfully",
+      dbPhoto: result.rows[0],
+      filename: req.file.filename,
+      url: publicUrl,
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement dans la base de données:", error);
+    res.status(500).json({ message: "Erreur lors de l'enregistrement dans la base de données" });
+  }
+});
+
 router.put("/:id", async (req, res) => {
   try {
     const userId = req.params.id;
