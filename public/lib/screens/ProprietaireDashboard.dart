@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'user_properties_screen.dart';
+import 'ProprietairePaymentsScreen.dart';
+import 'ProprietaireColocsScreen.dart';
 
 class ProprietaireDashboard extends StatelessWidget {
   const ProprietaireDashboard({super.key});
@@ -8,7 +10,6 @@ class ProprietaireDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dashboardItems = [
       DashboardItem(Icons.home, "Mes Logements", Colors.indigo),
-      DashboardItem(Icons.how_to_reg, "Candidatures", Colors.orange),
       DashboardItem(Icons.group, "Colocations", Colors.teal),
       DashboardItem(Icons.attach_money, "Paiements", Colors.green),
     ];
@@ -17,18 +18,26 @@ class ProprietaireDashboard extends StatelessWidget {
       appBar: AppBar(title: const Text('Dashboard Propriétaire')),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: GridView.builder(
-          itemCount: dashboardItems.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.1,
-          ),
-          itemBuilder: (context, index) {
-            final item = dashboardItems[index];
-            return DashboardCard(item: item);
-          },
+        child: Column(
+          children: [
+            Expanded(
+              child: SizedBox.expand(
+                child: DashboardCard(item: dashboardItems[0]),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SizedBox.expand(
+                child: DashboardCard(item: dashboardItems[1]),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SizedBox.expand(
+                child: DashboardCard(item: dashboardItems[2]),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -54,6 +63,7 @@ class DashboardCard extends StatelessWidget {
       elevation: 5,
       color: item.color.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: EdgeInsets.zero,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
@@ -62,6 +72,20 @@ class DashboardCard extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) => const UserPropertiesScreen(),
+              ),
+            );
+          } else if (item.title == "Paiements") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProprietairePaymentsScreen(),
+              ),
+            );
+          } else if (item.title == "Colocations") {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProprietaireColocsScreen(),
               ),
             );
           } else {

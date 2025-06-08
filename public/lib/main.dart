@@ -35,7 +35,6 @@ class MyApp extends StatelessWidget {
           '/favorites': (context) => const FavoritesScreen(),
           '/inbox': (context) => const InboxScreen(),
           '/profile': (context) => const ProfileScreen(),
-          // '/payment': (context) => const PaymentPage(), // Removed: PaymentPage now requires arguments
           '/addnewproperty': (context) => const AddNewPropertyScreen(),
         },
       ),

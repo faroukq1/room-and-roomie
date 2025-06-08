@@ -15,6 +15,7 @@ const messageRoutes = require("./routes/message"); // ✅ Ajout de la route mess
 const statsRoutes = require("./routes/stats");
 const logementRoutes = require("./routes/logements");
 const colocsRoutes = require("./routes/colocs");
+const paymentRoutes = require("./routes/payment");
 // Utilisation des routes
 app.use("/api/auth", authRoutes);
 app.use("/api/annonces", annoncesRoutes);
@@ -23,6 +24,7 @@ app.use("/api/message", messageRoutes); // ✅ Activation des routes de messager
 app.use("/api/stats", statsRoutes);
 app.use("/api/logements", logementRoutes);
 app.use("/api/colocs", colocsRoutes);
+app.use("/api/paiements", paymentRoutes);
 // Middleware de gestion des erreurs globales
 app.use((err, req, res, next) => {
     console.error("❌ Erreur serveur :", err.message);

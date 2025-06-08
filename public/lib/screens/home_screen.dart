@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'paymentpage.dart';
+import 'widgets/apply_coloc_dialog.dart';
 
 // Coloc Model
 class ColocModel {
@@ -980,155 +981,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-
-            // Location search overlay
-            if (_showLocationSearch && _showLogs)
-              Positioned(
-                top: 60,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.7,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Sélectionnez un gouvernorat',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap:
-                                  () => setState(() {
-                                    _searchController.clear();
-                                    _showLocationSearch = false;
-                                  }),
-                              child: const Text(
-                                'Reset',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Property list overlay
-            if (_showPropertyList && _showLogs)
-              Positioned(
-                top: 60,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.8,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Propriétés à $_selectedLocation',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap:
-                                  () =>
-                                      setState(() => _showPropertyList = false),
-                              child: const Icon(Icons.close),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child:
-                            _getFilteredProperties().isEmpty
-                                ? Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.home_work_outlined,
-                                        size: 64,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Aucune propriété disponible à $_selectedLocation',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      ElevatedButton(
-                                        onPressed:
-                                            () => setState(() {
-                                              _showPropertyList = false;
-                                              _showLocationSearch = true;
-                                            }),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
-                                          foregroundColor: Colors.white,
-                                        ),
-                                        child: const Text(
-                                          'Choisir un autre lieu',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                                : _buildPropertyList(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -1378,10 +1230,114 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class PropertyDetailPage extends StatelessWidget {
+class PropertyDetailPage extends StatefulWidget {
   final Map<String, dynamic> property;
 
   const PropertyDetailPage({super.key, required this.property});
+
+  @override
+  State<PropertyDetailPage> createState() => _PropertyDetailPageState();
+}
+
+class _PropertyDetailPageState extends State<PropertyDetailPage> {
+  bool _isApplying = false;
+  bool _hasApplied = false;
+  int? _userId;
+  bool _isOwner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfAppliedOrOwner();
+  }
+
+  Future<void> _checkIfAppliedOrOwner() async {
+    final storage = const FlutterSecureStorage();
+    final userDataStr = await storage.read(key: 'user_data');
+    if (userDataStr != null) {
+      final userData = jsonDecode(userDataStr);
+      setState(() {
+        _userId = userData['id'];
+        _isOwner =
+            widget.property['proprietaire'] != null &&
+            widget.property['proprietaire']['id'] == userData['id'];
+      });
+      // Check if already applied
+      if (widget.property['candidatures'] != null && _userId != null) {
+        final List<dynamic> candidatures = widget.property['candidatures'];
+        final applied = candidatures.any(
+          (c) =>
+              c['locataire_id'] == _userId &&
+              (c['statut'] == 'en_attente' || c['statut'] == 'acceptee'),
+        );
+        setState(() {
+          _hasApplied = applied;
+        });
+      }
+    }
+  }
+
+  void _showApplyDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => ApplyColocDialog(
+            isLoading: _isApplying,
+            onSubmit: (msg) {
+              Navigator.pop(context);
+              _applyForColoc(msg);
+            },
+          ),
+    );
+  }
+
+  Future<void> _applyForColoc(String message) async {
+    setState(() => _isApplying = true);
+    final storage = const FlutterSecureStorage();
+    final userDataStr = await storage.read(key: 'user_data');
+    int? userId;
+    if (userDataStr != null) {
+      final userData = jsonDecode(userDataStr);
+      userId = userData['id'];
+    }
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vous devez être connecté.')),
+      );
+      setState(() => _isApplying = false);
+      return;
+    }
+    final url = Uri.parse('http://10.0.2.2:3000/api/colocs/candidature');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'logement_id': widget.property['id'],
+          'locataire_id': userId,
+          'message': message,
+        }),
+      );
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Candidature envoyée !')));
+        setState(() {
+          _hasApplied = true;
+        });
+      } else {
+        final err = jsonDecode(response.body)['error'] ?? response.body;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur: $err')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erreur réseau ou serveur.')),
+      );
+    }
+    setState(() => _isApplying = false);
+  }
 
   void _buyProperty(BuildContext context) {
     showDialog(
@@ -1390,7 +1346,7 @@ class PropertyDetailPage extends StatelessWidget {
           (context) => AlertDialog(
             title: const Text('Confirmer l\'achat'),
             content: Text(
-              'Voulez-vous acheter la propriété "${property['title']}" pour ${property['price'].toStringAsFixed(2)} DA ?',
+              'Voulez-vous acheter la propriété "${widget.property['title']}" pour ${widget.property['price'].toStringAsFixed(2)} DA ?',
             ),
             actions: [
               TextButton(
@@ -1402,7 +1358,7 @@ class PropertyDetailPage extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        'Achat de "${property['title']}" en cours...',
+                        'Achat de "${widget.property['title']}" en cours...',
                       ),
                     ),
                   );
@@ -1418,10 +1374,10 @@ class PropertyDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final proprietaire =
-        property['proprietaire'] as Map<String, dynamic>? ?? {};
+        widget.property['proprietaire'] as Map<String, dynamic>? ?? {};
 
     return Scaffold(
-      appBar: AppBar(title: Text(property['title'] ?? 'Propriété')),
+      appBar: AppBar(title: Text(widget.property['title'] ?? 'Propriété')),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1429,8 +1385,9 @@ class PropertyDetailPage extends StatelessWidget {
             AspectRatio(
               aspectRatio: 16 / 9,
               child: Image.network(
-                (property['images'] != null && property['images'].isNotEmpty)
-                    ? property['images'][0]
+                (widget.property['images'] != null &&
+                        widget.property['images'].isNotEmpty)
+                    ? widget.property['images'][0]
                     : 'https://via.placeholder.com/400',
                 fit: BoxFit.cover,
                 errorBuilder:
@@ -1446,7 +1403,7 @@ class PropertyDetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    property['title'] ?? 'Sans titre',
+                    widget.property['title'] ?? 'Sans titre',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -1456,14 +1413,14 @@ class PropertyDetailPage extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${(property['price'] ?? 0.0).toStringAsFixed(2)} DA',
+                        '${(widget.property['price'] ?? 0.0).toStringAsFixed(2)} DA',
                         style: const TextStyle(
                           fontSize: 20,
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (property['charges_incluses'] == true)
+                      if (widget.property['charges_incluses'] == true)
                         Text(
                           ' (charges incluses)',
                           style: TextStyle(
@@ -1475,11 +1432,11 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    property['location'] ?? 'Non spécifié',
+                    widget.property['location'] ?? 'Non spécifié',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   Text(
-                    'Code Postal: ${property['code_postal'] ?? 'Non spécifié'}',
+                    'Code Postal: ${widget.property['code_postal'] ?? 'Non spécifié'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
@@ -1489,19 +1446,19 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    property['details'] ?? 'Non spécifié',
+                    widget.property['details'] ?? 'Non spécifié',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   Text(
-                    'Type: ${property['type'] ?? 'Non spécifié'}',
+                    'Type: ${widget.property['type'] ?? 'Non spécifié'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   Text(
-                    'Meublé: ${property['meuble'] == true ? 'Oui' : 'Non'}',
+                    'Meublé: ${widget.property['meuble'] == true ? 'Oui' : 'Non'}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   Text(
-                    'Capacité max. colocataires: ${property['capacite_max_colocataires'] ?? 0}',
+                    'Capacité max. colocataires: ${widget.property['capacite_max_colocataires'] ?? 0}',
                     style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 16),
@@ -1511,7 +1468,7 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    property['description'] ?? 'Aucune description',
+                    widget.property['description'] ?? 'Aucune description',
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 16),
@@ -1534,7 +1491,7 @@ class PropertyDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Disponible à partir du: ${property['disponible_a_partir']?.toString().split('T')[0] ?? 'Non spécifié'}',
+                    'Disponible à partir du: ${widget.property['disponible_a_partir']?.toString().split('T')[0] ?? 'Non spécifié'}',
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 24),
@@ -1543,54 +1500,69 @@ class PropertyDetailPage extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton(
                           onPressed:
-                              () => Navigator.pushReplacementNamed(
-                                context,
-                                '/inbox',
-                              ),
+                              _isOwner
+                                  ? null
+                                  : () {
+                                    // Place your contact logic here (e.g., open chat, send request, etc.)
+                                  },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor:
+                                _isOwner ? Colors.grey : Colors.blue,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: const Text('Contacter'),
+                          child:
+                              _hasApplied
+                                  ? const Text('Candidature envoyée')
+                                  : _isApplying
+                                  ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                  : Text(
+                                    _isOwner ? 'ma colocation' : 'Contacter',
+                                  ),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => PaymentPage(
-                                      title: property['title'] ?? '',
-                                      price:
-                                          (property['price'] ?? 0.0) is int
-                                              ? (property['price'] ?? 0.0)
-                                                  .toDouble()
-                                              : (property['price'] ?? 0.0),
-                                      imageUrl:
-                                          (property['images'] != null &&
-                                                  property['images'].isNotEmpty)
-                                              ? property['images'][0]
-                                              : 'https://via.placeholder.com/400',
-                                      details: property['details'] ?? '',
-                                      location: property['location'] ?? '',
-                                    ),
-                              ),
-                            );
-                          },
+                          onPressed:
+                              _isOwner || _hasApplied || _isApplying
+                                  ? null
+                                  : _showApplyDialog,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: Colors.orange,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: const Text('Acheter'),
+                          child:
+                              _isOwner
+                                  ? const Text('ma propriété')
+                                  : _hasApplied
+                                  ? const Text('Candidature envoyée')
+                                  : _isApplying
+                                  ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                  : const Text('rejoindre'),
                         ),
                       ),
                     ],
@@ -1605,7 +1577,6 @@ class PropertyDetailPage extends StatelessWidget {
   }
 }
 
-// Property Filter Bottom Sheet (unchanged but included for completeness)
 class PropertyFilterBottomSheet extends StatefulWidget {
   final Function(Map<String, dynamic>)? onApplyFilters;
 

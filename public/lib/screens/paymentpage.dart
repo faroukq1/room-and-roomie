@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 class PaymentPage extends StatefulWidget {
   final String title;
   final double price;
   final String imageUrl;
   final String details;
   final String location;
-
+  final int logementId;
   const PaymentPage({
     super.key,
     required this.title,
@@ -14,6 +18,7 @@ class PaymentPage extends StatefulWidget {
     required this.imageUrl,
     required this.details,
     required this.location,
+    required this.logementId,
   });
 
   @override
@@ -179,14 +184,72 @@ class _PaymentPageState extends State<PaymentPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Process payment
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Paiement effectué avec succès!'),
-                          ),
+                      onPressed: () async {
+                        final storage = const FlutterSecureStorage();
+                        final userDataStr = await storage.read(
+                          key: 'user_data',
                         );
-                        Navigator.pop(context);
+                        int? userId;
+                        if (userDataStr != null) {
+                          try {
+                            final userData = jsonDecode(userDataStr);
+                            userId = userData['id'];
+                          } catch (e) {
+                            userId = null;
+                          }
+                        }
+                        if (userId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Utilisateur non connecté'),
+                            ),
+                          );
+                          return;
+                        }
+                        final montant =
+                            widget.price + 500; // price + service fee
+                        final moyenPaiement =
+                            _selectedMethod; // e.g. 'paypal', 'credit_card', etc.
+                        final logementId = widget.logementId;
+                        const baseUrl = 'http://10.0.2.2:3000';
+                        final url = Uri.parse('$baseUrl/api/paiements');
+                        final paymentData = {
+                          'montant': montant,
+                          'moyen_paiement': moyenPaiement,
+                          'locataire_id': userId,
+                          'logement_id': logementId,
+                        };
+                        try {
+                          final response = await http.post(
+                            url,
+                            headers: {'Content-Type': 'application/json'},
+                            body: jsonEncode(paymentData),
+                          );
+                          if (response.statusCode == 201) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Paiement effectué avec succès!'),
+                              ),
+                            );
+                            Navigator.pop(context);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Erreur lors du paiement: \n${response.body}',
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Erreur de connexion au serveur: $e',
+                              ),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
