@@ -36,7 +36,7 @@ class ApiService {
   Future<Map<String, dynamic>> login(String email, String motDePasse) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse('$baseUrl/api/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'mot_de_passe': motDePasse}),
       );
@@ -74,7 +74,7 @@ class ApiService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/protected-route'),
+        Uri.parse('$baseUrl/api/protected-route'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

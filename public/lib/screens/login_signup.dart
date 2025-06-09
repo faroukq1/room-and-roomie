@@ -92,14 +92,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
+        Uri.parse('$baseUrl/api/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nom': _nameController.text.trim(),
           'prenom': _prenomController.text.trim(),
           'email': _emailController.text.trim(),
           'mot_de_passe': _passwordController.text.trim(),
-          // Optionally include phone if your API supports it
           'telephone': _phoneController.text.trim(),
         }),
       );
@@ -139,14 +138,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
   }
 
-  // Continue as guest function
-  void _continueAsGuest() async {
-    // For now, just navigate to home
-    // You might want to set some flag to indicate guest mode
-    await storage.delete(key: 'auth_token');
-    await storage.delete(key: 'user_data');
-    Navigator.pushReplacementNamed(context, '/home');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -374,14 +365,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Skip for now button
-                  TextButton(
-                    onPressed: _continueAsGuest,
-                    child: const Text(
-                      'Continuer sans compte',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ),
 
                   const SizedBox(height: 30),
 
