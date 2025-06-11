@@ -43,11 +43,12 @@ class _ProprietaireColocsScreenState extends State<ProprietaireColocsScreen> {
     final response = await http.get(url);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      setState(() {
-        colocations = data['colocations'] ?? [];
-        candidatures = data['candidatures'] ?? [];
-        loading = false;
-      });
+      print('Fetched colocations: \\${data['colocations']}');
+setState(() {
+  colocations = data['colocations'] ?? [];
+  candidatures = data['candidatures'] ?? [];
+  loading = false;
+});
     } else {
       setState(() {
         loading = false;
@@ -125,90 +126,101 @@ class _ProprietaireColocsScreenState extends State<ProprietaireColocsScreen> {
                 children: [
                   // Colocataires Tab
                   colocations.isEmpty
-                      ? const Center(child: Text('Aucun colocataire trouvé.'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('Aucun colocataire trouvé.'),
+                              const SizedBox(height: 8),
+                              // Print raw data for debugging
+                              Text(
+                                'Debug: données brutes = ' + colocations.toString(),
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        )
                       : ListView.builder(
-                        itemCount: colocations.length,
-                        itemBuilder: (context, index) {
-                          final c = colocations[index];
-                          return ListTile(
-                            leading: const Icon(Icons.group),
-                            title: Text(
-                              '${c['prenom'] ?? ''} ${c['nom'] ?? ''}',
-                            ),
-                            subtitle: Text(
-                              'Logement: ${c['logement_titre'] ?? ''}\nEntrée: ${c['date_entree'] ?? '-'}',
-                            ),
-                            trailing:
-                                (c['date_sortie'] != null)
-                                    ? Text('Sortie: ${c['date_sortie']}')
-                                    : const Text('Actuel'),
-                          );
-                        },
-                      ),
+                          itemCount: colocations.length,
+                          itemBuilder: (context, index) {
+                            final c = colocations[index];
+                            final prenom = c['prenom'] ?? '(prénom manquant)';
+                            final nom = c['nom'] ?? '(nom manquant)';
+                            final logementTitre = c['logement_titre'] ?? '(logement inconnu)';
+                            final dateEntree = c['date_entree'] ?? '-';
+                            final dateSortie = c['date_sortie'];
+                            return ListTile(
+                              leading: const Icon(Icons.group),
+                              title: Text('$prenom $nom'),
+                              subtitle: Text('Logement: $logementTitre\nEntrée: $dateEntree'),
+                              trailing: (dateSortie != null)
+                                  ? Text('Sortie: $dateSortie')
+                                  : const Text('Actuel'),
+                            );
+                          },
+                        ),
                   // Candidatures Tab
                   candidatures.isEmpty
                       ? const Center(
-                        child: Text('Aucune candidature en attente.'),
-                      )
+                          child: Text('Aucune candidature en attente.'),
+                        )
                       : ListView.builder(
-                        itemCount: candidatures.length,
-                        itemBuilder: (context, index) {
-                          final c = candidatures[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                              vertical: 6,
-                              horizontal: 8,
-                            ),
-                            child: ListTile(
-                              leading: const Icon(Icons.person_add),
-                              title: Text(
-                                '${c['prenom'] ?? ''} ${c['nom'] ?? ''}',
+                          itemCount: candidatures.length,
+                          itemBuilder: (context, index) {
+                            final c = candidatures[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 8,
                               ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Logement: ${c['logement_titre'] ?? ''}',
-                                  ),
-                                  Text('Message: ${c['message'] ?? ''}'),
-                                  Text(
-                                    'Date: ${c['date_postulation']?.toString().split('T').first ?? ''}',
-                                  ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.check,
-                                      color: Colors.green,
+                              child: ListTile(
+                                leading: const Icon(Icons.person_add),
+                                title: Text(
+                                  '${c['prenom'] ?? ''} ${c['nom'] ?? ''}',
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Logement: ${c['logement_titre'] ?? ''}',
                                     ),
-                                    tooltip: 'Accepter',
-                                    onPressed:
-                                        () => _handleCandidatureAction(
-                                          c['candidature_id'],
-                                          'accept',
-                                        ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Colors.red,
+                                    Text('Message: ${c['message'] ?? ''}'),
+                                    Text(
+                                      'Date: ${c['date_postulation']?.toString().split('T').first ?? ''}',
                                     ),
-                                    tooltip: 'Refuser',
-                                    onPressed:
-                                        () => _handleCandidatureAction(
-                                          c['candidature_id'],
-                                          'refuse',
-                                        ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.check,
+                                        color: Colors.green,
+                                      ),
+                                      tooltip: 'Accepter',
+                                      onPressed: () => _handleCandidatureAction(
+                                        c['candidature_id'],
+                                        'accept',
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.red,
+                                      ),
+                                      tooltip: 'Refuser',
+                                      onPressed: () => _handleCandidatureAction(
+                                        c['candidature_id'],
+                                        'refuse',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
                 ],
               ),
             ),

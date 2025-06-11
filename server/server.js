@@ -16,6 +16,7 @@ const statsRoutes = require("./routes/stats");
 const logementRoutes = require("./routes/logements");
 const colocsRoutes = require("./routes/colocs");
 const paymentRoutes = require("./routes/payment");
+const notificationRoutes = require("./routes/notification");
 // Utilisation des routes
 app.use("/api/auth", authRoutes);
 app.use("/api/annonces", annoncesRoutes);
@@ -25,7 +26,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/logements", logementRoutes);
 app.use("/api/colocs", colocsRoutes);
 app.use("/api/paiements", paymentRoutes);
-
+app.use("/api/notifications", notificationRoutes);
 // ➕ Serve downloads folder statically
 const path = require('path');
 app.use('/downloads', express.static(path.join(__dirname, 'downloads')));

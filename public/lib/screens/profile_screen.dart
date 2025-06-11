@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'privacy_policy_screen.dart';
 import 'settings_screen.dart';
 import 'ProprietaireDashboard.dart';
+import 'notification_screen.dart';
 import '../constants.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -181,6 +182,28 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
+                    // Top row with notification bell
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.notifications_none,
+                            color: Colors.blueAccent,
+                            size: 28,
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const NotificationScreen(),
+                              ),
+                            );
+                          },
+                          tooltip: 'Notifications',
+                        ),
+                      ],
+                    ),
                     // Avatar and edit button
                     Stack(
                       alignment: Alignment.bottomRight,

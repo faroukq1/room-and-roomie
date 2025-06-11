@@ -150,30 +150,66 @@ router.get('/proprietaire/:proprietaireId', async (req, res) => {
 router.post('/candidature/:id/action', async (req, res) => {
     const { id } = req.params;
     const { action } = req.body; // 'accept' or 'refuse'
+    
     if (!['accept', 'refuse'].includes(action)) {
         return res.status(400).json({ error: 'Invalid action' });
     }
+    
     try {
         // Get candidature info
         const candResult = await pool.query('SELECT * FROM candidatures WHERE id = $1', [id]);
         if (candResult.rows.length === 0) {
             return res.status(404).json({ error: 'Candidature not found' });
         }
+        
         const candidature = candResult.rows[0];
+        
         if (action === 'accept') {
             // Update statut
             await pool.query("UPDATE candidatures SET statut = 'acceptee' WHERE id = $1", [id]);
+            
             // Add to colocataires if not already present
-            const checkColoc = await pool.query('SELECT * FROM colocataires WHERE colocation_id = $1 AND utilisateur_id = $2', [candidature.logement_id, candidature.locataire_id]);
-            if (checkColoc.rows.length === 0) {
-                // Find colocation for this logement
-                const colocResult = await pool.query('SELECT id FROM colocations WHERE logement_id = $1 LIMIT 1', [candidature.logement_id]);
-                if (colocResult.rows.length === 0) {
-                    return res.status(400).json({ error: 'No colocation found for this property' });
+            // Find colocation for this logement
+            let colocationId;
+            const colocResult = await pool.query('SELECT id FROM colocations WHERE logement_id = $1 LIMIT 1', [candidature.logement_id]);
+            if (colocResult.rows.length === 0) {
+                // Fetch proprietaire_id from logements table
+                const logementResult = await pool.query('SELECT proprietaire_id FROM logements WHERE id = $1', [candidature.logement_id]);
+                if (logementResult.rows.length === 0) {
+                    return res.status(400).json({ error: 'Logement introuvable pour créer la colocation.' });
                 }
-                const colocationId = colocResult.rows[0].id;
-                await pool.query('INSERT INTO colocataires (date_entree, colocation_id, utilisateur_id) VALUES (CURRENT_DATE, $1, $2)', [colocationId, candidature.locataire_id]);
+                
+                const proprietaireId = logementResult.rows[0].proprietaire_id;
+                // Create a new colocation for this logement with createur_id
+                const newColoc = await pool.query(
+                    'INSERT INTO colocations (logement_id, description, date_creation, createur_id) VALUES ($1, $2, CURRENT_DATE, $3) RETURNING id',
+                    [candidature.logement_id, 'Colocation créée automatiquement', proprietaireId]
+                );
+                colocationId = newColoc.rows[0].id;
+            } else {
+                colocationId = colocResult.rows[0].id;
             }
+
+            // Check if colocataire already exists for this colocation
+            const checkColoc = await pool.query('SELECT * FROM colocataires WHERE colocation_id = $1 AND utilisateur_id = $2', [colocationId, candidature.locataire_id]);
+            if (checkColoc.rows.length === 0) {
+                await pool.query('INSERT INTO colocataires (date_entree, colocation_id, utilisateur_id) VALUES (CURRENT_DATE, $1, $2)', [colocationId, candidature.locataire_id]);
+            } else {
+                // Already exists, optionally return a friendly message or skip
+                return res.status(409).json({ error: 'Ce colocataire est déjà ajouté à cette colocation.' });
+            }
+
+            // Insert notification for the accepted user
+            await pool.query(
+                "INSERT INTO notifications (titre, contenu, type, utilisateur_id) VALUES ($1, $2, $3, $4)",
+                [
+                    'Candidature acceptée',
+                    'Votre candidature pour une colocation a été acceptée !',
+                    'candidature',
+                    candidature.locataire_id
+                ]
+            );
+
             return res.json({ success: true, message: 'Candidature accepted' });
         } else if (action === 'refuse') {
             await pool.query("UPDATE candidatures SET statut = 'refusee' WHERE id = $1", [id]);
