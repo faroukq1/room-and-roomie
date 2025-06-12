@@ -26,7 +26,7 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  String _selectedMethod = 'credit_card';
+  String _selectedMethod = 'paypal';
   final TextEditingController _cardController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _cvvController = TextEditingController();
