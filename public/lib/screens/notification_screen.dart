@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/notification.dart';
 import '../models/accepted_colocation.dart';
+import '../screens/paymentpage.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants.dart';
 
@@ -103,53 +104,87 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ...acceptedColocations.map(
                           (coloc) => Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading:
-                                  (coloc.logementPhotos != null &&
-                                          coloc.logementPhotos!.isNotEmpty)
-                                      ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          _fullImageUrl(
-                                            coloc.logementPhotos!
-                                                .split(',')
-                                                .first,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => PaymentPage(
+                                          title: coloc.logementTitre,
+                                          price: coloc.logementLoyer,
+                                          imageUrl: _fullImageUrl(
+                                            coloc.logementPhotos != null &&
+                                                    coloc
+                                                        .logementPhotos!
+                                                        .isNotEmpty
+                                                ? coloc.logementPhotos!
+                                                    .split(',')
+                                                    .first
+                                                : '',
                                           ),
+                                          details: coloc.logementDescription,
+                                          location: coloc.logementAdresse,
+                                          logementId: coloc.logementId,
+                                        ),
+                                  ),
+                                );
+                              },
+                              child: ListTile(
+                                leading:
+                                    (coloc.logementPhotos != null &&
+                                            coloc.logementPhotos!.isNotEmpty)
+                                        ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Image.network(
+                                            _fullImageUrl(
+                                              coloc.logementPhotos!
+                                                  .split(',')
+                                                  .first,
+                                            ),
+                                            width: 60,
+                                            height: 60,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    Container(
+                                                      color: Colors.grey[300],
+                                                      width: 60,
+                                                      height: 60,
+                                                      child: const Icon(
+                                                        Icons.broken_image,
+                                                      ),
+                                                    ),
+                                          ),
+                                        )
+                                        : Container(
                                           width: 60,
                                           height: 60,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) =>
-                                                  Container(
-                                                    color: Colors.grey[300],
-                                                    width: 60,
-                                                    height: 60,
-                                                    child: const Icon(
-                                                      Icons.broken_image,
-                                                    ),
-                                                  ),
+                                          color: Colors.grey[300],
+                                          child: const Icon(
+                                            Icons.home,
+                                            size: 32,
+                                          ),
                                         ),
-                                      )
-                                      : Container(
-                                        width: 60,
-                                        height: 60,
-                                        color: Colors.grey[300],
-                                        child: const Icon(Icons.home, size: 32),
-                                      ),
-                              title: Text(coloc.logementTitre),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(coloc.logementAdresse),
-                                  Text('Ville: ${coloc.logementVille}'),
-                                  Text('Loyer: ${coloc.logementLoyer} €/mois'),
-                                  if (coloc.ownerNom.isNotEmpty)
+                                title: Text(coloc.logementTitre),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(coloc.logementAdresse),
+                                    Text('Ville: ${coloc.logementVille}'),
                                     Text(
-                                      'Propriétaire: ${coloc.ownerNom} ${coloc.ownerPrenom}',
+                                      'Loyer: ${coloc.logementLoyer} €/mois',
                                     ),
-                                ],
+                                    if (coloc.ownerNom.isNotEmpty)
+                                      Text(
+                                        'Propriétaire: ${coloc.ownerNom} ${coloc.ownerPrenom}',
+                                      ),
+                                  ],
+                                ),
+                                isThreeLine: true,
                               ),
-                              isThreeLine: true,
                             ),
                           ),
                         ),
