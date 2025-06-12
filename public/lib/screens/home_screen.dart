@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'paymentpage.dart';
+import 'ChatScreen.dart';
 import 'widgets/apply_coloc_dialog.dart';
 import '../constants.dart';
 
@@ -597,9 +598,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed:
-                          () =>
-                              Navigator.pushReplacementNamed(context, '/inbox'),
+                      onPressed: () async {
+                        // Fetch current user ID from secure storage
+                        final userDataStr = await storage.read(key: 'user_data');
+                        int? currentUserId;
+                        if (userDataStr != null) {
+                          final userData = jsonDecode(userDataStr);
+                          currentUserId = userData['id'];
+                        }
+                        if (currentUserId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(
+                                currentUserId: currentUserId,
+                                otherUserId: coloc.userId,
+                                otherUserName: '${coloc.prenom} ${coloc.nom}',
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Vous devez être connecté.')),
+                          );
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
